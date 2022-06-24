@@ -11,6 +11,15 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Samples/Mixed Reality Toolkit Examples/2.8.0/Experimental - SceneUnderstanding/Scenes/SceneUnderstandingExample.unity
     guid: d42a352dc9a8c4d4990a924687759199
+  - enabled: 0
+    path: Assets/Samples/Mixed Reality Toolkit Examples/2.8.0/Demos - ScrollingObjectCollection/Scenes/ScrollingObjectCollection.unity
+    guid: 79a0bb4c0426b7a4099c35eeced52ee4
+  - enabled: 0
+    path: Assets/Samples/WLT Samples/1.5.9/WLT Examples/Scenes/WorldLockingBasic.unity
+    guid: 483fb9a6d06c4e6468a69739ef78c5b7
+  - enabled: 0
+    path: Assets/Samples/WLT Samples/1.5.9/WLT Examples/Scenes/SpacePin.unity
+    guid: 516c32e1748c92a4280675c0a2c3f24f
   m_configObjects:
     UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: a1e038ca7f6a6de45acca422b7bbfe93, type: 2}
     UnityEditor.XR.ARKit.ARKitSettings: {fileID: 11400000, guid: 4b55a72b4dfb7304cb2176bb1ead1b91, type: 2}
