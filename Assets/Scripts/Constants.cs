@@ -5,5 +5,4 @@ using UnityEngine;
 public static class Constants
 {
     public const bool SPATIAL_MESH_VIS_ACTIVE = false;
-
 }

@@ -5,6 +5,7 @@ TagManager:
   serializedVersion: 2
   tags:
   - 3DScan
+  - Human
   layers:
   - Default
   - TransparentFX
