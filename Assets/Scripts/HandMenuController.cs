@@ -9,29 +9,12 @@ using UnityEngine;
 public class HandMenuController : MonoBehaviour
 {
     public GameObject scanSelector;
-    private GameObject[] scans;
-    private GameObject[] humans;
 
-    void Awake()
-    {
-        scans = GameObject.FindGameObjectsWithTag("3DScan");
-        humans = GameObject.FindGameObjectsWithTag("Human");
-        foreach (GameObject scan in scans)
-        {
-            scan.SetActive(false);
-        }
-        foreach (GameObject human in humans)
-        {
-            human.SetActive(true);
-        }
-    }
 
     // Start is called before the first frame update
     void Start()
 
     {
-
-
     }
 
     // Update is called once per frame
@@ -43,13 +26,12 @@ public class HandMenuController : MonoBehaviour
     {
         if(gameObject.GetComponent<Interactable>().IsToggled)
         {
-            Debug.Log("Start Alligning");
             //scanSelector.SetActive(true);
-            foreach (GameObject scan in scans)
+            foreach (GameObject scan in GlobalSettings.scans)
             {
                 scan.SetActive(true);
             }
-            foreach (GameObject human in humans)
+            foreach (GameObject human in GlobalSettings.humans)
             {
                 human.SetActive(false);
             }
@@ -57,11 +39,11 @@ public class HandMenuController : MonoBehaviour
         else
         {
             Debug.Log("Stop Alligning");
-            foreach (GameObject scan in scans)
+            foreach (GameObject scan in GlobalSettings.scans)
             {
                scan.SetActive(false);
             }
-            foreach (GameObject human in humans)
+            foreach (GameObject human in GlobalSettings.humans)
             {
                 human.SetActive(true);
             }
@@ -69,5 +51,27 @@ public class HandMenuController : MonoBehaviour
         }
 
 
+    }
+    public void ToggleSpatialMeshObvserver()
+    {
+        if (gameObject.GetComponent<Interactable>().IsToggled)
+        {
+            CoreServices.SpatialAwarenessSystem.Disable();
+        }
+        else
+        {
+            CoreServices.SpatialAwarenessSystem.Enable();
+        }
+    }
+
+    private void DeactivateSpatialMesh()
+    {
+        var observer = CoreServices.GetSpatialAwarenessSystemDataProvider<IMixedRealitySpatialAwarenessMeshObserver>();
+        observer.DisplayOption = SpatialAwarenessMeshDisplayOptions.None;
+    }
+    private void ActivateSpatialMesh()
+    {
+        var observer = CoreServices.GetSpatialAwarenessSystemDataProvider<IMixedRealitySpatialAwarenessMeshObserver>();
+        observer.DisplayOption = SpatialAwarenessMeshDisplayOptions.Occlusion;
     }
 }

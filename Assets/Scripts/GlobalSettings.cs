@@ -5,21 +5,21 @@ using UnityEngine;
 
 public class GlobalSettings : MonoBehaviour
 {
-    // Start is called before the first frame update
+    public static GameObject[] scans;
+    public static GameObject[] humans;
+
     void Start()
     {
-        //if (Constants.SPATIAL_MESH_VIS_ACTIVE)
-        //{
-        //    // enable
-        //    CoreServices.SpatialAwarenessSystem.Enable();
-
-        //}
-        //else
-        //{
-        //    // disable
-        //    CoreServices.SpatialAwarenessSystem.Disable();
-
-        //}
+        scans = GameObject.FindGameObjectsWithTag("3DScan");
+        humans = GameObject.FindGameObjectsWithTag("Human");
+        foreach (GameObject scan in scans)
+        {
+            scan.SetActive(false);
+        }
+        foreach (GameObject human in humans)
+        {
+            human.SetActive(true);
+        }
     }
 
     // Update is called once per frame

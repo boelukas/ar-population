@@ -1,3 +1,10 @@
+# Global Settings
+TRAJ_EXPORT = True
+TRAJ_EXPORT_PATH = 'C:\\Users\\Lukas\\Projects\\ar-population\\Data\\PathTrajectories'
+GAMMA_RESULTS_PATH = 'C:\\Users\\Lukas\\Projects\\ar-population\\Blender\\results\\MPVAEPolicy_v0\\*.pkl'
+
+
+
 import bpy
 import bmesh
 import pdb
@@ -25,13 +32,14 @@ def export_trajectory():
             
 
     '''save the list to file'''
-    traj_outfolder = bpy.data.filepath.replace('.blend','_traj')
+#    traj_outfolder = bpy.data.filepath.replace('.blend','_traj')
+    traj_outfolder = TRAJ_EXPORT_PATH
     if not os.path.exists(traj_outfolder):
         os.makedirs(traj_outfolder)
 
     existing_trajs = sorted(glob.glob(os.path.join(traj_outfolder,'*.pkl')))
     traj_idx = len(existing_trajs)
-    outfilename = os.path.join(traj_outfolder, '{:05d}.pkl'.format(traj_idx))
+    outfilename = os.path.join(traj_outfolder, 'traj_{:05d}.pkl'.format(traj_idx))
 
     with open(outfilename, 'wb') as f:
         pickle.dump(np.array(points),f)
@@ -371,12 +379,11 @@ def animate_smplx(filepath):
 import glob
 
 if __name__ == '__main__':
-    TRAJ_EXPORT = False
     if TRAJ_EXPORT:
         export_trajectory()
     else:
     #   prefix = '/home/yzhang/workspaces/HumanMotionGen/MOJO-plus/results/tmp123/GAMMAVAEComboPolicy_PPO/MPVAEPolicy_v0/*.pkl'
-        prefix = 'C:\\Users\\Lukas\\Projects\\ar-population\\Blender\\results\\MPVAEPolicy_v0\\*.pkl'
+        prefix = GAMMA_RESULTS_PATH
         filenames = sorted(glob.glob(prefix))
 
         for idx in range(0,1):
