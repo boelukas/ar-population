@@ -1,9 +1,9 @@
 # Global Settings
-TRAJ_EXPORT = True
+TRAJ_EXPORT = False
 TRAJ_EXPORT_PATH = 'C:\\Users\\Lukas\\Projects\\ar-population\\Data\\PathTrajectories'
-GAMMA_RESULTS_PATH = 'C:\\Users\\Lukas\\Projects\\ar-population\\Blender\\results\\MPVAEPolicy_v0\\*.pkl'
+GAMMA_RESULTS_PATH = 'C:\\Users\\Lukas\\Projects\\ar-population\\Data\\GammaResults\\MPVAEPolicy_v0\\*.pkl'
 
-
+N_TRAJECTORIES = 2
 
 import bpy
 import bmesh
@@ -38,6 +38,7 @@ def export_trajectory():
         os.makedirs(traj_outfolder)
 
     existing_trajs = sorted(glob.glob(os.path.join(traj_outfolder,'*.pkl')))
+    print(existing_trajs)
     traj_idx = len(existing_trajs)
     outfilename = os.path.join(traj_outfolder, 'traj_{:05d}.pkl'.format(traj_idx))
 
@@ -386,7 +387,7 @@ if __name__ == '__main__':
         prefix = GAMMA_RESULTS_PATH
         filenames = sorted(glob.glob(prefix))
 
-        for idx in range(0,1):
+        for idx in range(0, N_TRAJECTORIES):
             filepath = filenames[idx]
             print(filepath)
             if os.path.exists(filepath):
