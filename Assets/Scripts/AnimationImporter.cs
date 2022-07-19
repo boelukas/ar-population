@@ -1,14 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
 public class AnimationImporter : MonoBehaviour
 {
-
-    public AnimationClip clip;
-
-    public SMPLX smplx;
+    private AnimationClip clip;
+    public TextAsset textFile;
+    private SMPLX smplx;
 
     AnimationCurve[][] positionCurves;
     AnimationCurve[][] rotationCurves;
@@ -53,12 +53,32 @@ public class AnimationImporter : MonoBehaviour
             rotationCurves[i][3] = new AnimationCurve();
         }
 
-        ImportAnimation();
+        //ImportAnimation();
+        ReadGammExport();
 
     }
 
+    public GammaDataStructure ReadGammExport()
+    {
+    //    string[] p = new string[] { Application.streamingAssetsPath, "GammaExports", "test.json" };
+    //    string p2 = Application.streamingAssetsPath + "/GammaExports" + "/test.json";
+    //    Debug.Log(Application.dataPath);
+    //    string path = Path.Combine(p2);
+    //    Debug.Log(path);
+    //    TextAsset jsonFile = Resources.Load(path) as TextAsset;
+        string json = textFile.text;
+        GammaDataStructure gamma = JsonUtility.FromJson<GammaDataStructure>(json);
+        //float[][] betas = gamma.motion[0].betas.GetArray2D();
+        //float[][][] transf_rotmat = gamma.motion[0].transf_rotmat.GetArray3D();
+        //float[][][][] markers = gamma.motion[0].markers.GetArray4D();
+
+        return gamma;
+    }
     public void ImportAnimation()
     {
+        
+
+
         float startTime = Time.time;
         smplx.SetBodyPose(SMPLX.BodyPose.T);
         TakeSnapshot(0);
