@@ -3,13 +3,20 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
+using System.Linq;
 
 public class AnimationImporter : MonoBehaviour
 {
     private AnimationClip clip;
-    public TextAsset textFile;
+    private Animation anim;
     private SMPLX smplx;
 
+    public TextAsset textFile;
+    
+    
+    public GameObject walkPointObject;
+    private GameObject[] walkPoints;
+    private GameObject path;
     AnimationCurve[][] positionCurves;
     AnimationCurve[][] rotationCurves;
     AnimationCurve[][] scaleCurves;
@@ -21,10 +28,15 @@ public class AnimationImporter : MonoBehaviour
     int nCurves = 3;
 
 
+    // Animation parameters
+    int nFramesMp = 10;
+    float deltaT = 0.1f;
+    int nSmplxBodyJoints = 21;
+    string[] bodyJointNames = new string[] { "pelvis", "left_hip", "right_hip", "spine1", "left_knee", "right_knee", "spine2", "left_ankle", "right_ankle", "spine3", "left_foot", "right_foot", "neck", "left_collar", "right_collar", "head", "left_shoulder", "right_shoulder", "left_elbow", "right_elbow", "left_wrist", "right_wrist", "jaw", "left_eye_smplhf", "right_eye_smplhf", "left_index1", "left_index2", "left_index3", "left_middle1", "left_middle2", "left_middle3", "left_pinky1", "left_pinky2", "left_pinky3", "left_ring1", "left_ring2", "left_ring3", "left_thumb1", "left_thumb2", "left_thumb3", "right_index1", "right_index2", "right_index3", "right_middle1", "right_middle2", "right_middle3", "right_pinky1", "right_pinky2", "right_pinky3", "right_ring1", "right_ring2", "right_ring3", "right_thumb1", "right_thumb2", "right_thumb3" };
+    string[] ignoredJoints = new string[] { "neck", "head" };
     private void Start()
     {
         smplx = GetComponent<SMPLX>();
-
         childrenTransforms = gameObject.transform.GetComponentsInChildren<Transform>(true);
         nChildren = childrenTransforms.Length;
 
@@ -53,8 +65,11 @@ public class AnimationImporter : MonoBehaviour
             rotationCurves[i][3] = new AnimationCurve();
         }
 
-        //ImportAnimation();
-        ReadGammExport();
+        ImportAnimation();
+        anim = gameObject.AddComponent<Animation>();
+        anim.AddClip(clip, "test");
+        anim.Play("test");
+        
 
     }
 
@@ -76,26 +91,118 @@ public class AnimationImporter : MonoBehaviour
     }
     public void ImportAnimation()
     {
+
+
+        GammaDataStructure gamma = ReadGammExport();
+        //CreateWalkPoints(gamma.wpath);
+
         
+        SetBetas(gamma.motion[0].betas);
+        CreateAnimationClip(gamma.motion);
+
+        //float startTime = Time.time;
+        //smplx.SetBodyPose(SMPLX.BodyPose.T);
+        //TakeSnapshot(0);
 
 
-        float startTime = Time.time;
-        smplx.SetBodyPose(SMPLX.BodyPose.T);
-        TakeSnapshot(0);
+        //smplx.SetBodyPose(SMPLX.BodyPose.A);
+        //TakeSnapshot(0.1f);
 
 
-        smplx.SetBodyPose(SMPLX.BodyPose.A);
-        TakeSnapshot(0.1f);
+        //smplx.SetBodyPose(SMPLX.BodyPose.T);
+        //TakeSnapshot(0.2f);
+
+        //clip = StopRecording();
+
+        //AssetDatabase.CreateAsset(clip, "Assets/testclip2.anim");
+        //AssetDatabase.SaveAssets();
+
+    }
+    public void CreateAnimationClip(Motion[] motionPrimitives)
+    {
+        int frame = 0;
+        foreach (Motion motionPrimitive in motionPrimitives)
+        {
+            Matrix4x4 transfRotmat = ArrayWrapper.ToY(motionPrimitive.transf_rotmat.GetTransfromMatrix());
+            Vector3 transfTransl = ArrayWrapper.ToY(motionPrimitive.transf_transl.GetVector3());
+            //if(motionPrimitive.timestamp == 0)
+            //{
+            //   transform.localPosition = transfTransl;
+            //}
+
+            int i = 0;
+            string mpType = motionPrimitive.mp_type;
+            switch (mpType)
+            {
+                case "1-frame":
+                    i = 1;
+                    break;
+                case "2-frame":
+                    i = 2;
+                    break;
+                case "start-frame":
+                    i = 0;
+                    break;
+                default:
+                    break;
+            }
+            for(; i < nFramesMp; i++)
+            {
+                // Update Local Pose
+                Vector3[] bodyPose = new Vector3[nSmplxBodyJoints];
+                for(int j= 0; j < nSmplxBodyJoints; j++)
+                {
+                    bodyPose[j] = new Vector3(motionPrimitive.smplx_params.Get(i, 6 + j * 3), motionPrimitive.smplx_params.Get(i, 6 + j*3 + 1), motionPrimitive.smplx_params.Get(i, 6 + j *3 + 2));
+                    Quaternion pose = SMPLX.QuatFromRodrigues(bodyPose[j].x, bodyPose[j].y, bodyPose[j].z);
+                    if (!ignoredJoints.Any(bodyJointNames[j + 1].Contains))
+                    {
+                        smplx.SetLocalJointRotation(bodyJointNames[j + 1], pose);
+                    }
 
 
-        smplx.SetBodyPose(SMPLX.BodyPose.T);
-        TakeSnapshot(0.2f);
+                }
+                smplx.UpdatePoseCorrectives();
+                smplx.UpdateJointPositions(false);
 
+                //Update Global Pose
+                Vector3 transl = ArrayWrapper.ToY(motionPrimitive.pelvis_loc.GetVector3(i));
+                Vector3 globalOrient = new Vector3(motionPrimitive.smplx_params.Get(i, 3), motionPrimitive.smplx_params.Get(i, 4), motionPrimitive.smplx_params.Get(i, 5));
+
+
+                //transform.localPosition += transl;
+
+                Quaternion q = QuaternionFromMatrix(transfRotmat);
+                //transform.rotation = SMPLX.QuatFromRodrigues(globalOrient.x, globalOrient.y, globalOrient.z);
+
+
+                TakeSnapshot(deltaT * frame);
+                frame++;
+            }
+        }
         clip = StopRecording();
-
         AssetDatabase.CreateAsset(clip, "Assets/testclip2.anim");
         AssetDatabase.SaveAssets();
-
+    }
+    public Quaternion QuaternionFromMatrix(Matrix4x4 m) 
+    { 
+        return Quaternion.LookRotation(m.GetColumn(2), m.GetColumn(1)); 
+    }
+    public void CreateWalkPoints(ArrayWrapper wPath)
+    {
+        path = new GameObject("Path");
+        path.transform.parent = transform;
+        walkPoints = new GameObject[wPath.shape[0]];
+        for (int i = 0; i < wPath.shape[0]; i++)
+        {
+            Vector3 position = new Vector3(wPath.Get(i, 0), wPath.Get(i, 2), wPath.Get(i, 1));
+            walkPoints[i] = Instantiate(walkPointObject, position, Quaternion.identity, path.transform);
+            walkPoints[i].name = "WalkPoint_" + i;
+        }
+    }
+    public void SetBetas(ArrayWrapper betas)
+    {
+        smplx.betas = betas.data;
+        smplx.SetBetaShapes();
     }
     public string CalculateRelativePath(Transform target, Transform root)
     {

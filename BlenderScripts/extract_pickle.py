@@ -1,5 +1,6 @@
 import pickle
-import json 
+import json
+from matplotlib.pyplot import switch_backend 
 
 import numpy as np
 
@@ -9,6 +10,7 @@ def transform_to_lists(data_dict):
         if  type(value) is dict:
             res[key] = transform_to_lists(value)
         elif type(value) is np.ndarray:
+            value = np.squeeze(value)
             temp_dict = {"shape": list(value.shape), "data": np.reshape(value, -1).tolist()}
             res[key] = temp_dict
         elif type(value) is list:
