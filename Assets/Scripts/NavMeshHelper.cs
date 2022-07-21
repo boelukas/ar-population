@@ -85,9 +85,14 @@ public class NavMeshHelper : MonoBehaviour
 
     public static void ExportPath(NavMeshPath path, string exportDir, string pathName)
     {
+        File.WriteAllText(Path.Combine(exportDir, pathName), PathToJson(path));
+    }
+
+    public static string PathToJson(NavMeshPath path)
+    {
         float[] points = new float[path.corners.Length * 3];
         int j = 0;
-        for (int i = 0; i < path.corners.Length * 3; i+=3)
+        for (int i = 0; i < path.corners.Length * 3; i += 3)
         {
             points[i] = path.corners[j].x;
             points[i + 1] = path.corners[j].y;
@@ -95,9 +100,7 @@ public class NavMeshHelper : MonoBehaviour
             j++;
 
         }
-        string jsonString = "["+string.Join(", ", points)+"]";
-        File.WriteAllText(Path.Combine(exportDir, pathName), jsonString);
-
+        return "[" + string.Join(", ", points) + "]";
     }
     private static void DrawLine(Vector3 start, Vector3 end, GameObject parentGo)
     {
