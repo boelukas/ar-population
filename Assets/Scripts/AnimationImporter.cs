@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using UnityEditor;
+//using UnityEditor;
 using UnityEngine;
 using System.Linq;
 
@@ -180,8 +180,8 @@ public class AnimationImporter : MonoBehaviour
             }
         }
         clip = StopRecording();
-        AssetDatabase.CreateAsset(clip, "Assets/testclip2.anim");
-        AssetDatabase.SaveAssets();
+        //AssetDatabase.CreateAsset(clip, "Assets/testclip2.anim");
+        //AssetDatabase.SaveAssets();
     }
     public Quaternion QuaternionFromMatrix(Matrix4x4 m) 
     { 
