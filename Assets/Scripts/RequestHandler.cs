@@ -11,7 +11,7 @@ public class RequestHandler : MonoBehaviour
     {
         try
         {
-            string url = "http://localhost:8080";
+            string url = "http://217.22.132.16:8080";
             byte[] jsonToSend = new System.Text.UTF8Encoding().GetBytes(data);
             var req = new UnityWebRequest(url, "POST");
             req.uploadHandler = new UploadHandlerRaw(jsonToSend);
@@ -41,10 +41,6 @@ public class RequestHandler : MonoBehaviour
             responseCallback(responseText);
 
         }
-        //byte[] results = req.downloadHandler.data;
-        Debug.Log("Second Success");
         req.Dispose();
-        // Some code after success
-
     }
 }

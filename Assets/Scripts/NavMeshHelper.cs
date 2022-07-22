@@ -40,9 +40,10 @@ public class NavMeshHelper : MonoBehaviour
         path = path1;
         return pathFound;
     }
-    public static void VisualizePath(NavMeshPath path)
+    public static void VisualizePath(NavMeshPath path, GameObject parentGo)
     {
         GameObject pathObject = new GameObject("Path");
+        pathObject.transform.parent = parentGo.transform;
         Vector3[] corners = path.corners;
         int numCorners = corners.Length;
         if(numCorners == 0)
@@ -104,7 +105,7 @@ public class NavMeshHelper : MonoBehaviour
     }
     private static void DrawLine(Vector3 start, Vector3 end, GameObject parentGo)
     {
-        GameObject line = new GameObject();
+        GameObject line = new GameObject("PathConnection");
         line.transform.parent = parentGo.transform;
         var lineRenderer = line.AddComponent<LineRenderer>();
         lineRenderer.material = new Material(Shader.Find("Standard"));

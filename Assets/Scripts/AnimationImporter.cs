@@ -82,7 +82,7 @@ public class AnimationImporter : MonoBehaviour
     //    Debug.Log(path);
     //    TextAsset jsonFile = Resources.Load(path) as TextAsset;
         string json = textFile.text;
-        Debug.Log(json);
+        //Debug.Log(json);
         GammaDataStructure gamma = JsonUtility.FromJson<GammaDataStructure>(json);
         //float[][] betas = gamma.motion[0].betas.GetArray2D();
         //float[][][] transf_rotmat = gamma.motion[0].transf_rotmat.GetArray3D();
@@ -224,7 +224,6 @@ public class AnimationImporter : MonoBehaviour
             }
             current = current.parent;
         }
-        Debug.Log(res); 
 
         return res;
     }

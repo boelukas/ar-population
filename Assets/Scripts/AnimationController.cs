@@ -13,12 +13,14 @@ public class AnimationController : MonoBehaviour
     public GameObject smplxMale;
     public GameObject walkPointObject;
 
+    private GameObject sceneContent;
     private GameObject spatialMeshGo;
     private RequestHandler requestHandler;
     System.Action<string> requestResponseCallback;
 
     // Sampled path from NavMesh
     public bool visualizePath = true;
+    private int minPathLength = 3;
 
     // GAMMA walking path
     public bool visualizeWalkingPath = true;
@@ -50,6 +52,7 @@ public class AnimationController : MonoBehaviour
         requestHandler = gameObject.AddComponent<RequestHandler>();
         requestResponseCallback = new System.Action<string>(ImportAnimation);
         humans = new List<GameObject>();
+        sceneContent = GameObject.FindGameObjectsWithTag("SceneContent")[0];
     }
 
     // Update is called once per frame
@@ -71,15 +74,15 @@ public class AnimationController : MonoBehaviour
         if (visualizePath)
         {
             Debug.Log("Visualizing path");
-            NavMeshHelper.VisualizePath(samplePath);
+            NavMeshHelper.VisualizePath(samplePath, spatialMeshGo);
             Debug.Log("Visualizing path - done");
 
         }
+        UnityToSmplx(samplePath);
         string jsonPath = NavMeshHelper.PathToJson(samplePath);
         Debug.Log("Sending request to GAMMA.");
         requestHandler.Request(jsonPath, requestResponseCallback);
     }
-
     private void ImportAnimation(string jsonString)
     {
         Debug.Log("Importing Animation");
@@ -91,18 +94,19 @@ public class AnimationController : MonoBehaviour
         if (visualizeWalkingPath)
         {
             Debug.Log("Visualizing walking path");
-            CreateWalkPoints(gamma.wpath, human);
+            CreateWalkPoints(gamma.wpath, spatialMeshGo);
             Debug.Log("Visualizing walking path - done");
 
         }
         humans.Add(human);
         human.name = "human_" + humans.Count;
         SMPLX smplx = human.AddComponent<SMPLX>();
+        smplx.modelType = SMPLX.ModelType.Female;
         SetBetas(gamma.motion[0].betas, smplx);
 
         InitAnimationCurves(human);
 
-        AnimationClip clip = CreateAnimationClip(gamma.motion, smplx);
+        AnimationClip clip = CreateAnimationClip(gamma.motion, smplx, human);
         Debug.Log("Importing Animation - done");
 
         Animation anim = human.AddComponent<Animation>();
@@ -124,7 +128,8 @@ public class AnimationController : MonoBehaviour
             combine[i].transform = meshObject.Filter.transform.localToWorldMatrix;
             i++;
         }
-        spatialMeshGo = new GameObject();
+        spatialMeshGo = new GameObject("SpatialMesh");
+        spatialMeshGo.transform.parent = sceneContent.transform;
         spatialMeshGo.AddComponent<MeshFilter>();
         spatialMeshGo.AddComponent<MeshRenderer>();
         spatialMeshGo.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Diffuse"));
@@ -149,8 +154,27 @@ public class AnimationController : MonoBehaviour
         while (!found)
         {
             found = NavMeshHelper.SamplePath(spatialMeshGo.GetComponent<MeshFilter>().mesh.bounds.center, spatialMeshGo.GetComponent<MeshFilter>().mesh.bounds.size, out sampPath);
+            float pathLength = PathLength(sampPath);
+            Debug.Log("Sampled path length: "+pathLength);
+            if(pathLength < minPathLength)
+            {
+                found = false;
+            }
         }
         return sampPath;
+    }
+
+    private float PathLength(NavMeshPath path)
+    {
+        float length = 0f;
+        Vector3[] corners = path.corners;
+        for(int i = 1; i < corners.Length; i++)
+        {
+            float segmentLength = (corners[i] - corners[i - 1]).magnitude;
+            length += segmentLength;
+        }
+        return length;
+
     }
     private void InitAnimationCurves(GameObject human)
     {
@@ -183,16 +207,20 @@ public class AnimationController : MonoBehaviour
         }
     }
 
-    public AnimationClip CreateAnimationClip(Motion[] motionPrimitives, SMPLX smplx)
+    public AnimationClip CreateAnimationClip(Motion[] motionPrimitives, SMPLX smplx, GameObject human)
     {
         int frame = 0;
         foreach (Motion motionPrimitive in motionPrimitives)
         {
             Matrix4x4 transfRotmat = ArrayWrapper.ToY(motionPrimitive.transf_rotmat.GetTransfromMatrix());
             Vector3 transfTransl = ArrayWrapper.ToY(motionPrimitive.transf_transl.GetVector3());
-            //if(motionPrimitive.timestamp == 0)
+            //if (motionPrimitive.timestamp == 0)
             //{
-            //   transform.localPosition = transfTransl;
+            //    transform.localPosition = transfTransl;
+            //}
+            //else
+            //{
+            //    transform.localPosition += transfTransl;
             //}
 
             int i = 0;
@@ -234,7 +262,7 @@ public class AnimationController : MonoBehaviour
                 Vector3 globalOrient = new Vector3(motionPrimitive.smplx_params.Get(i, 3), motionPrimitive.smplx_params.Get(i, 4), motionPrimitive.smplx_params.Get(i, 5));
 
 
-                //transform.localPosition += transl;
+                human.transform.localPosition = transl + transfTransl;
 
                 Quaternion q = QuaternionFromMatrix(transfRotmat);
                 //transform.rotation = SMPLX.QuatFromRodrigues(globalOrient.x, globalOrient.y, globalOrient.z);
@@ -253,18 +281,20 @@ public class AnimationController : MonoBehaviour
     {
         return Quaternion.LookRotation(m.GetColumn(2), m.GetColumn(1));
     }
-    public void CreateWalkPoints(ArrayWrapper wPath, GameObject human)
+    public void CreateWalkPoints(ArrayWrapper wPath, GameObject parentGo)
     {
         walkingPath = new GameObject("Path");
-        walkingPath.transform.parent = human.transform;
+        walkingPath.transform.parent = parentGo.transform;
         walkPoints = new GameObject[wPath.shape[0]];
         for (int i = 0; i < wPath.shape[0]; i++)
         {
-            Vector3 position = new Vector3(wPath.Get(i, 0), wPath.Get(i, 2), wPath.Get(i, 1));
+            Vector3 position = new Vector3(wPath.Get(i, 0), wPath.Get(i, 1), wPath.Get(i, 2));
+            position = SmplxToUnity(position);
             walkPoints[i] = Instantiate(walkPointObject, position, Quaternion.identity, walkingPath.transform);
             walkPoints[i].name = "WalkPoint_" + i;
         }
     }
+
     public void SetBetas(ArrayWrapper betas, SMPLX smplx)
     {
         smplx.betas = betas.data;
@@ -289,8 +319,6 @@ public class AnimationController : MonoBehaviour
             }
             current = current.parent;
         }
-        Debug.Log(res);
-
         return res;
     }
     public void TakeSnapshot(float startTime)
@@ -329,5 +357,20 @@ public class AnimationController : MonoBehaviour
         }
         clip.wrapMode = WrapMode.Loop;
         return clip;
+    }
+    private void UnityToSmplx(NavMeshPath path)
+    {
+        for (int i = 0; i < path.corners.Length; i++)
+        {
+            path.corners[i] = new Vector3(path.corners[i].x, path.corners[i].z, path.corners[i].y);
+        }
+    }
+    private Vector3 SmplxToUnity(Vector3 v)
+    {
+        return new Vector3(v.x, v.z, v.y);
+    }
+    private void SmplxCoordsToUnity(GameObject goSmplxCoords)
+    {
+        goSmplxCoords.transform.Rotate(-90, 0, 0);
     }
 }
