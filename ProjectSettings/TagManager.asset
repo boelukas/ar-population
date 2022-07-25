@@ -6,6 +6,7 @@ TagManager:
   tags:
   - 3DScan
   - Human
+  - SceneContent
   layers:
   - Default
   - TransparentFX
