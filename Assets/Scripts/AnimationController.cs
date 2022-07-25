@@ -50,14 +50,17 @@ public class AnimationController : MonoBehaviour
     int nCurves = 3;
 
     //Debug
-    public bool usePredefindedGammaAnswer = true;
+    public bool usePredefindedGammaAnswer = false;
     public TextAsset jsonGammaResponse;
 
 
+    private void Awake()
+    {
+        requestHandler = gameObject.AddComponent<RequestHandler>();
+    }
     // Start is called before the first frame update
     void Start()
     {
-        requestHandler = gameObject.AddComponent<RequestHandler>();
         requestResponseCallback = new System.Action<string>(ImportAnimation);
         humans = new List<GameObject>();
         sceneContent = GameObject.FindGameObjectsWithTag("SceneContent")[0];
@@ -69,6 +72,12 @@ public class AnimationController : MonoBehaviour
         }
     }
 
+    void OnEnable()
+    {
+        Debug.Log("Sending GET");
+        StartCoroutine(requestHandler.GetRequest());
+
+    }
     // Update is called once per frame
     void Update()
     {
@@ -103,8 +112,15 @@ public class AnimationController : MonoBehaviour
         Debug.Log(jsonString);
 
         GammaDataStructure gamma = JsonUtility.FromJson<GammaDataStructure>(jsonString);
-
-        GameObject human = Instantiate(smplxFemale, spatialMeshGo.transform);
+        GameObject human;
+        if (gamma.motion[0].gender == "female")
+        {
+            human = Instantiate(smplxFemale, spatialMeshGo.transform);
+        }
+        else
+        {
+            human = Instantiate(smplxFemale, spatialMeshGo.transform);
+        }
         if (visualizeWalkingPath)
         {
             Debug.Log("Visualizing walking path");
@@ -115,7 +131,15 @@ public class AnimationController : MonoBehaviour
         humans.Add(human);
         human.name = "human_" + humans.Count;
         SMPLX smplx = human.AddComponent<SMPLX>();
-        smplx.modelType = SMPLX.ModelType.Female;
+        if(gamma.motion[0].gender == "female")
+        {
+            smplx.modelType = SMPLX.ModelType.Female;
+        }
+        else
+        {
+            smplx.modelType = SMPLX.ModelType.Male;
+        }
+        smplx.SetHandPose(SMPLX.HandPose.Relaxed);
         SetBetas(gamma.motion[0].betas, smplx);
 
         InitAnimationCurves(human);
@@ -276,7 +300,12 @@ public class AnimationController : MonoBehaviour
                 // Translation
                 Vector3 transl = motionPrimitive.pelvis_loc.GetVector3(i);
                 Vector3 translUnity = ArrayWrapper.ToY(transfRotmat.MultiplyPoint3x4(transl));
-                human.transform.localPosition = translUnity + transfTransl;
+
+                GameObject pelvis = GetChildGameObject(human, "pelvis");
+                Vector3 pelvisPos = pelvis.transform.localPosition;
+
+                human.transform.localPosition = translUnity + transfTransl - pelvisPos;
+
 
                 //Orientation
                 Vector3 globalOrient_r = new Vector3(motionPrimitive.smplx_params.Get(i, 3), motionPrimitive.smplx_params.Get(i, 4), motionPrimitive.smplx_params.Get(i, 5));
@@ -506,5 +535,12 @@ public class AnimationController : MonoBehaviour
         sphere.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
         sphere.GetComponent<Renderer>().material.color = color;
         return sphere;
+    }
+    private GameObject GetChildGameObject(GameObject fromGameObject, string withName)
+    {
+        //Author: Isaac Dart, June-13.
+        Transform[] ts = fromGameObject.transform.GetComponentsInChildren<Transform>();
+        foreach (Transform t in ts) if (t.gameObject.name == withName) return t.gameObject;
+        return null;
     }
 }
