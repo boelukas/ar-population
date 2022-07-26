@@ -18,6 +18,8 @@ public class AnimationController : MonoBehaviour
     private RequestHandler requestHandler;
     System.Action<string> requestResponseCallback;
 
+    private IMixedRealitySpatialAwarenessMeshObserver meshObserver;
+
     // Sampled path from NavMesh
     public bool visualizePath = true;
     private int minPathLength = 3;
@@ -70,6 +72,20 @@ public class AnimationController : MonoBehaviour
             BuildNavMeshOfSpatialMesh();
             ImportAnimation(jsonGammaResponse.text);
         }
+        var spatialAwarenessService = CoreServices.SpatialAwarenessSystem;
+        var dataProviderAccess = spatialAwarenessService as IMixedRealityDataProviderAccess;
+        var fakeMeshObserverName = "Spatial Object Mesh Observer";
+        var hololensMeshObserverName = "OpenXR Spatial Mesh Observer";
+        if (Application.isEditor)
+        {
+            meshObserver = dataProviderAccess.GetDataProvider<IMixedRealitySpatialAwarenessMeshObserver>(fakeMeshObserverName);
+        }
+        else
+        {
+            meshObserver = dataProviderAccess.GetDataProvider<IMixedRealitySpatialAwarenessMeshObserver>(hololensMeshObserverName);
+        }
+
+
     }
 
     void OnEnable()
@@ -86,9 +102,12 @@ public class AnimationController : MonoBehaviour
 
     public void CreateWalkingPathAnimation()
     {
-        Debug.Log("Building Navigation Mesh.");
-        BuildNavMeshOfSpatialMesh();
-        Debug.Log("Building Navigation Mesh - done");
+        if(humans.Count == 0)
+        {
+            Debug.Log("Building Navigation Mesh.");
+            BuildNavMeshOfSpatialMesh();
+            Debug.Log("Building Navigation Mesh - done");
+        }
 
         Debug.Log("Sample path.");
         NavMeshPath samplePath = SampleNavMeshPath();
@@ -109,7 +128,6 @@ public class AnimationController : MonoBehaviour
     private void ImportAnimation(string jsonString)
     {
         Debug.Log("Importing Animation");
-        Debug.Log(jsonString);
 
         GammaDataStructure gamma = JsonUtility.FromJson<GammaDataStructure>(jsonString);
         GameObject human;
@@ -119,7 +137,7 @@ public class AnimationController : MonoBehaviour
         }
         else
         {
-            human = Instantiate(smplxFemale, spatialMeshGo.transform);
+            human = Instantiate(smplxMale, spatialMeshGo.transform);
         }
         if (visualizeWalkingPath)
         {
@@ -156,7 +174,9 @@ public class AnimationController : MonoBehaviour
 
     private void BuildNavMeshOfSpatialMesh()
     {
-        var observer = CoreServices.GetSpatialAwarenessSystemDataProvider<IMixedRealitySpatialAwarenessMeshObserver>();
+        //var observer = CoreServices.GetSpatialAwarenessSystemDataProvider<IMixedRealitySpatialAwarenessMeshObserver>();
+        var observer = meshObserver;
+
         // Loop through all known Meshes
         CombineInstance[] combine = new CombineInstance[observer.Meshes.Count];
         int i = 0;
@@ -190,16 +210,18 @@ public class AnimationController : MonoBehaviour
     {
         NavMeshPath sampPath = new NavMeshPath();
         bool found = false;
+        int count = 0;
         while (!found)
         {
+            count++;
             found = NavMeshHelper.SamplePath(spatialMeshGo.GetComponent<MeshFilter>().mesh.bounds.center, spatialMeshGo.GetComponent<MeshFilter>().mesh.bounds.size, out sampPath);
             float pathLength = PathLength(sampPath);
-            Debug.Log("Sampled path length: " + pathLength);
             if (pathLength < minPathLength)
             {
                 found = false;
             }
         }
+        Debug.Log("Sampled path with length: " + PathLength(sampPath) +", in "+ count+" attempts.");
         return sampPath;
     }
 
@@ -293,8 +315,6 @@ public class AnimationController : MonoBehaviour
 
 
                 }
-                smplx.UpdatePoseCorrectives();
-                smplx.UpdateJointPositions(false);
 
                 //Update Global Pose
                 // Translation
@@ -335,6 +355,9 @@ public class AnimationController : MonoBehaviour
                 //human.transform.Rotate(Vector3.left, -90);
                 //human.transform.Rotate(Vector3.up, 90);
 
+                //smplx.SetHandPose(SMPLX.HandPose.Relaxed);
+                smplx.UpdatePoseCorrectives();
+                smplx.UpdateJointPositions(false);
 
                 TakeSnapshot(deltaT * frame);
                 frame++;

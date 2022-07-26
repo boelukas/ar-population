@@ -347,6 +347,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5676948298107356274}
+  - {fileID: 332954440}
   m_Father: {fileID: 0}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1448,6 +1449,57 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 269467360}
   m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &332954438
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 332954440}
+  - component: {fileID: 332954439}
+  m_Layer: 0
+  m_Name: AnimationHandler
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &332954439
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 332954438}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1887bd7db5a12243a02373180a62248, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  smplxFemale: {fileID: 813402265414023461, guid: 8bb52d8fb2e90cd4e874d9a44f2b221f, type: 3}
+  smplxMale: {fileID: 5568697286347022951, guid: dc0ebcd35c98fe24fad61ed3ccbe29f9, type: 3}
+  walkPointObject: {fileID: 919132149155446097, guid: 75ca130032d13ca48a4789d64f9909af, type: 3}
+  visualizePath: 1
+  visualizeWalkingPath: 1
+  usePredefindedGammaAnswer: 0
+  jsonGammaResponse: {fileID: 4900000, guid: ee5b779baea03144ebf93883dfe313da, type: 3}
+--- !u!4 &332954440
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 332954438}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -1.430632, y: 0.5734562, z: -7.3474402}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 100097133}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &333803523
 GameObject:
   m_ObjectHideFlags: 0
@@ -2108,7 +2160,6 @@ GameObject:
   - component: {fileID: 540968635}
   - component: {fileID: 540968634}
   - component: {fileID: 540968633}
-  - component: {fileID: 540968632}
   m_Layer: 0
   m_Name: CreateAnimationButton
   m_TagString: Untagged
@@ -2136,25 +2187,6 @@ Transform:
   m_Father: {fileID: 577688386749934989}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &540968632
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 540968630}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c1887bd7db5a12243a02373180a62248, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  smplxFemale: {fileID: 813402265414023461, guid: 8bb52d8fb2e90cd4e874d9a44f2b221f, type: 3}
-  smplxMale: {fileID: 5568697286347022951, guid: dc0ebcd35c98fe24fad61ed3ccbe29f9, type: 3}
-  walkPointObject: {fileID: 919132149155446097, guid: 75ca130032d13ca48a4789d64f9909af, type: 3}
-  visualizePath: 1
-  visualizeWalkingPath: 1
-  usePredefindedGammaAnswer: 0
-  jsonGammaResponse: {fileID: 4900000, guid: ee5b779baea03144ebf93883dfe313da, type: 3}
 --- !u!114 &540968633
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2332,7 +2364,7 @@ MonoBehaviour:
   OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 540968632}
+      - m_Target: {fileID: 332954439}
         m_TargetAssemblyTypeName: AnimationController, Assembly-CSharp
         m_MethodName: CreateWalkingPathAnimation
         m_Mode: 1

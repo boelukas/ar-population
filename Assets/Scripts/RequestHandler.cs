@@ -52,9 +52,7 @@ public class RequestHandler : MonoBehaviour
         using (UnityWebRequest webRequest = UnityWebRequest.Get(uri))
         {
             // Request and wait for the desired page.
-            Debug.Log("waiting");
             yield return webRequest.SendWebRequest();
-            Debug.Log("waiting - done");
 
             string[] pages = uri.Split('/');
             int page = pages.Length - 1;
