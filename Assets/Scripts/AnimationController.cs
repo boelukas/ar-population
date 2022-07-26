@@ -31,6 +31,8 @@ public class AnimationController : MonoBehaviour
     private System.Action<string> requestResponseCallback;
     private IMixedRealitySpatialAwarenessMeshObserver meshObserver;
     private List<GameObject> humans;
+    private List<GameObject> spatialMeshPaths;
+    private List<GameObject> gammaPaths;
 
     // Editing start and end position
     private GameObject startPos;
@@ -62,6 +64,9 @@ public class AnimationController : MonoBehaviour
         requestHandler = gameObject.AddComponent<RequestHandler>();
         requestResponseCallback = new System.Action<string>(ImportAnimation);
         humans = new List<GameObject>();
+        spatialMeshPaths = new List<GameObject>();
+        gammaPaths = new List<GameObject>();
+
         sceneContent = GameObject.FindGameObjectsWithTag("SceneContent")[0];
 
         if (usePredefindedGammaAnswer)
@@ -107,7 +112,7 @@ public class AnimationController : MonoBehaviour
         if (visualizeNavMeshPath)
         {
             Debug.Log("Visualizing path");
-            NavMeshHelper.VisualizePath(samplePath, spatialMeshGo);
+            spatialMeshPaths.Add(NavMeshHelper.VisualizePath(samplePath, spatialMeshGo));
             Debug.Log("Visualizing path - done");
 
         }
@@ -133,7 +138,7 @@ public class AnimationController : MonoBehaviour
         if (visualizeGammaWalkingPath)
         {
             Debug.Log("Visualizing walking path");
-            CreateWalkPoints(gamma.wpath, spatialMeshGo);
+            gammaPaths.Add(CreateWalkPoints(gamma.wpath, spatialMeshGo));
             Debug.Log("Visualizing walking path - done");
 
         }
@@ -194,7 +199,7 @@ public class AnimationController : MonoBehaviour
         spatialMeshGo.GetComponent<NavMeshSurface>().BuildNavMesh();
 
         // Deactivate spatial mesh
-        observer.DisplayOption = SpatialAwarenessMeshDisplayOptions.None;
+        observer.DisplayOption = SpatialAwarenessMeshDisplayOptions.Occlusion;
         Debug.Log("Building Navigation Mesh - done");
 
     }
@@ -420,7 +425,7 @@ public class AnimationController : MonoBehaviour
 
 
 
-    public void CreateWalkPoints(ArrayWrapper wPath, GameObject parentGo)
+    public GameObject CreateWalkPoints(ArrayWrapper wPath, GameObject parentGo)
     {
         GameObject walkingPath = new GameObject("Path");
         walkingPath.transform.parent = parentGo.transform;
@@ -432,6 +437,7 @@ public class AnimationController : MonoBehaviour
             walkPoints[i] = Instantiate(walkPointObject, position, Quaternion.identity, walkingPath.transform);
             walkPoints[i].name = "WalkPoint_" + i;
         }
+        return walkingPath;
     }
 
     public void SetBetas(ArrayWrapper betas, SMPLX smplx)
@@ -565,5 +571,78 @@ public class AnimationController : MonoBehaviour
             endPos = null;
         }
 
+    }
+    public void DestroyAnimation()
+    {
+        if(humans.Count != 0)
+        {
+            GameObject human = humans.Last();
+            humans.Remove(human);
+            Destroy(human);
+            if (visualizeGammaWalkingPath)
+            {
+                GameObject p = gammaPaths.Last();
+                gammaPaths.Remove(p);
+                Destroy(p);
+            }
+            if (visualizeNavMeshPath)
+            {
+                GameObject p = spatialMeshPaths.Last();
+                spatialMeshPaths.Remove(p);
+                Destroy(p);
+            }
+        }
+    }
+
+    public void SetExportedMeshVisibility(GameObject switchGo)
+    {
+        bool isToggled = switchGo.GetComponent<Interactable>().IsToggled;
+        if (isToggled)
+        {
+            if (spatialMeshGo != null)
+            {
+                spatialMeshGo.GetComponent<MeshRenderer>().enabled = true;
+            }
+        }
+        else
+        {
+            if (spatialMeshGo != null)
+            {
+                spatialMeshGo.GetComponent<MeshRenderer>().enabled = false;
+            }
+        }
+    }
+
+    public void SetPathVisibility(GameObject switchGo)
+    {
+        bool isToggled = switchGo.GetComponent<Interactable>().IsToggled;
+
+        if (visualizeGammaWalkingPath && isToggled)
+        {
+            foreach(GameObject p in gammaPaths)
+            {
+                p.SetActive(true);
+            }
+        }else if(visualizeGammaWalkingPath && !isToggled)
+        {
+            foreach (GameObject p in gammaPaths)
+            {
+                p.SetActive(false);
+            }
+        }
+        if (visualizeNavMeshPath && isToggled)
+        {
+            foreach (GameObject p in spatialMeshPaths)
+            {
+                p.SetActive(true);
+            }
+        }
+        else if (visualizeNavMeshPath && !isToggled)
+        {
+            foreach (GameObject p in spatialMeshPaths)
+            {
+                p.SetActive(false);
+            }
+        }
     }
 }

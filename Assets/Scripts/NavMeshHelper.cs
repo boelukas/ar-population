@@ -77,7 +77,7 @@ public class NavMeshHelper : MonoBehaviour
         return pathFound;
     }
 
-    public static void VisualizePath(NavMeshPath path, GameObject parentGo)
+    public static GameObject VisualizePath(NavMeshPath path, GameObject parentGo)
     {
         GameObject pathObject = new GameObject("Path");
         pathObject.transform.parent = parentGo.transform;
@@ -85,7 +85,7 @@ public class NavMeshHelper : MonoBehaviour
         int numCorners = corners.Length;
         if(numCorners == 0)
         {
-            return;
+            return null;
         } else if( numCorners == 1){
             GameObject cornerSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             cornerSphere.transform.parent = pathObject.transform;
@@ -119,6 +119,7 @@ public class NavMeshHelper : MonoBehaviour
             DrawLine(corners[numCorners - 2], corners[numCorners - 1], pathObject);
 
         }
+        return pathObject;
     }
 
     public static void ExportPath(NavMeshPath path, string exportDir, string pathName)
