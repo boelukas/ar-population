@@ -1,68 +1,58 @@
 using Microsoft.MixedReality.Toolkit;
 using Microsoft.MixedReality.Toolkit.SpatialAwareness;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.AI;
 
 public class AnimationController : MonoBehaviour
 {
+    // SMPLX objects
     public GameObject smplxFemale;
     public GameObject smplxMale;
     public GameObject walkPointObject;
 
-    private GameObject sceneContent;
-    private GameObject spatialMeshGo;
-    private RequestHandler requestHandler;
-    System.Action<string> requestResponseCallback;
+    // NavMesh path properties
+    public bool visualizeNavMeshPath = true;
+    public int minNavMeshPathLength = 3;
 
-    private IMixedRealitySpatialAwarenessMeshObserver meshObserver;
-
-    // Sampled path from NavMesh
-    public bool visualizePath = true;
-    private int minPathLength = 3;
-
-    // GAMMA walking path
-    public bool visualizeWalkingPath = true;
-    private GameObject walkingPath;
-    private GameObject[] walkPoints;
-    private List<GameObject> humans;
-
-
-    //Animation parameters
-    int nFramesMp = 10;
-    float deltaT = 0.05f;
-    //float deltaT = 0.3f;
-    //float deltaT = 0.1f;
-
-    int nSmplxBodyJoints = 21;
-    string[] bodyJointNames = new string[] { "pelvis", "left_hip", "right_hip", "spine1", "left_knee", "right_knee", "spine2", "left_ankle", "right_ankle", "spine3", "left_foot", "right_foot", "neck", "left_collar", "right_collar", "head", "left_shoulder", "right_shoulder", "left_elbow", "right_elbow", "left_wrist", "right_wrist", "jaw", "left_eye_smplhf", "right_eye_smplhf", "left_index1", "left_index2", "left_index3", "left_middle1", "left_middle2", "left_middle3", "left_pinky1", "left_pinky2", "left_pinky3", "left_ring1", "left_ring2", "left_ring3", "left_thumb1", "left_thumb2", "left_thumb3", "right_index1", "right_index2", "right_index3", "right_middle1", "right_middle2", "right_middle3", "right_pinky1", "right_pinky2", "right_pinky3", "right_ring1", "right_ring2", "right_ring3", "right_thumb1", "right_thumb2", "right_thumb3" };
-    string[] ignoredJoints = new string[] { "neck", "head" };
-
-    AnimationCurve[][] positionCurves;
-    AnimationCurve[][] rotationCurves;
-    AnimationCurve[][] scaleCurves;
-
-    string[] childernNames;
-    string[] childrenPaths;
-    Transform[] childrenTransforms;
-    int nChildren;
-    int nCurves = 3;
+    // GAMMA walking path properties
+    public bool visualizeGammaWalkingPath = true;
 
     //Debug
     public bool usePredefindedGammaAnswer = false;
-    public TextAsset jsonGammaResponse;
+    public TextAsset debugJsonGammaResponse;
+
+    // Private members
+    private GameObject sceneContent;
+    private GameObject spatialMeshGo;
+    private RequestHandler requestHandler;
+    private System.Action<string> requestResponseCallback;
+    private IMixedRealitySpatialAwarenessMeshObserver meshObserver;
+    private List<GameObject> humans;
+
+    //Animation parameters
+    private readonly int nFramesMp = 10;
+    private readonly float deltaT = 0.05f;
+
+    private readonly int nSmplxBodyJoints = 21;
+    private readonly string[] bodyJointNames = new string[] { "pelvis", "left_hip", "right_hip", "spine1", "left_knee", "right_knee", "spine2", "left_ankle", "right_ankle", "spine3", "left_foot", "right_foot", "neck", "left_collar", "right_collar", "head", "left_shoulder", "right_shoulder", "left_elbow", "right_elbow", "left_wrist", "right_wrist", "jaw", "left_eye_smplhf", "right_eye_smplhf", "left_index1", "left_index2", "left_index3", "left_middle1", "left_middle2", "left_middle3", "left_pinky1", "left_pinky2", "left_pinky3", "left_ring1", "left_ring2", "left_ring3", "left_thumb1", "left_thumb2", "left_thumb3", "right_index1", "right_index2", "right_index3", "right_middle1", "right_middle2", "right_middle3", "right_pinky1", "right_pinky2", "right_pinky3", "right_ring1", "right_ring2", "right_ring3", "right_thumb1", "right_thumb2", "right_thumb3" };
+    private readonly string[] ignoredJoints = new string[] { "neck", "head" };
+
+    private readonly int nCurves = 3;
+    private AnimationCurve[][] positionCurves;
+    private AnimationCurve[][] rotationCurves;
+    private AnimationCurve[][] scaleCurves;
+
+    private string[] childernNames;
+    private string[] childrenPaths;
+    private Transform[] childrenTransforms;
+    private int nChildren;
 
 
-    private void Awake()
-    {
-        requestHandler = gameObject.AddComponent<RequestHandler>();
-    }
-    // Start is called before the first frame update
     void Start()
     {
+        requestHandler = gameObject.AddComponent<RequestHandler>();
         requestResponseCallback = new System.Action<string>(ImportAnimation);
         humans = new List<GameObject>();
         sceneContent = GameObject.FindGameObjectsWithTag("SceneContent")[0];
@@ -70,7 +60,7 @@ public class AnimationController : MonoBehaviour
         if (usePredefindedGammaAnswer)
         {
             BuildNavMeshOfSpatialMesh();
-            ImportAnimation(jsonGammaResponse.text);
+            ImportAnimation(debugJsonGammaResponse.text);
         }
         var spatialAwarenessService = CoreServices.SpatialAwarenessSystem;
         var dataProviderAccess = spatialAwarenessService as IMixedRealityDataProviderAccess;
@@ -88,16 +78,10 @@ public class AnimationController : MonoBehaviour
 
     }
 
-    void OnEnable()
+    public void PingServer()
     {
         Debug.Log("Sending GET");
         StartCoroutine(requestHandler.GetRequest());
-
-    }
-    // Update is called once per frame
-    void Update()
-    {
-
     }
 
     public void CreateWalkingPathAnimation()
@@ -113,14 +97,14 @@ public class AnimationController : MonoBehaviour
         NavMeshPath samplePath = SampleNavMeshPath();
         Debug.Log("Sample path - done");
 
-        if (visualizePath)
+        if (visualizeNavMeshPath)
         {
             Debug.Log("Visualizing path");
             NavMeshHelper.VisualizePath(samplePath, spatialMeshGo);
             Debug.Log("Visualizing path - done");
 
         }
-        UnityToSmplx(samplePath);
+        UnityPathToGamma(samplePath);
         string jsonPath = NavMeshHelper.PathToJson(samplePath);
         Debug.Log("Sending request to GAMMA.");
         requestHandler.Request(jsonPath, requestResponseCallback);
@@ -139,7 +123,7 @@ public class AnimationController : MonoBehaviour
         {
             human = Instantiate(smplxMale, spatialMeshGo.transform);
         }
-        if (visualizeWalkingPath)
+        if (visualizeGammaWalkingPath)
         {
             Debug.Log("Visualizing walking path");
             CreateWalkPoints(gamma.wpath, spatialMeshGo);
@@ -216,7 +200,7 @@ public class AnimationController : MonoBehaviour
             count++;
             found = NavMeshHelper.SamplePath(spatialMeshGo.GetComponent<MeshFilter>().mesh.bounds.center, spatialMeshGo.GetComponent<MeshFilter>().mesh.bounds.size, out sampPath);
             float pathLength = PathLength(sampPath);
-            if (pathLength < minPathLength)
+            if (pathLength < minNavMeshPathLength)
             {
                 found = false;
             }
@@ -275,14 +259,6 @@ public class AnimationController : MonoBehaviour
         {
             Matrix4x4 transfRotmat = ArrayWrapper.ToY(motionPrimitive.transf_rotmat.GetTransfromMatrix());
             Vector3 transfTransl = ArrayWrapper.ToY(motionPrimitive.transf_transl.GetVector3());
-            //if (motionPrimitive.timestamp == 0)
-            //{
-            //    transform.localPosition = transfTransl;
-            //}
-            //else
-            //{
-            //    transform.localPosition += transfTransl;
-            //}
 
             int i = 0;
             string mpType = motionPrimitive.mp_type;
@@ -312,50 +288,24 @@ public class AnimationController : MonoBehaviour
                     {
                         smplx.SetLocalJointRotation(bodyJointNames[j + 1], pose);
                     }
-
-
                 }
 
                 //Update Global Pose
                 // Translation
                 Vector3 transl = motionPrimitive.pelvis_loc.GetVector3(i);
                 Vector3 translUnity = ArrayWrapper.ToY(transfRotmat.MultiplyPoint3x4(transl));
-
                 GameObject pelvis = GetChildGameObject(human, "pelvis");
                 Vector3 pelvisPos = pelvis.transform.localPosition;
-
                 human.transform.localPosition = translUnity + transfTransl - pelvisPos;
 
 
                 //Orientation
-                Vector3 globalOrient_r = new Vector3(motionPrimitive.smplx_params.Get(i, 3), motionPrimitive.smplx_params.Get(i, 4), motionPrimitive.smplx_params.Get(i, 5));
-                //globalOrient_r = SmplxToUnity(globalOrient_r);
-                //Quaternion globalOrient_q = SMPLX.QuatFromRodrigues(globalOrient_r.x, globalOrient_r.y, globalOrient_r.z);
-                Quaternion globalOrient_q = AaToQuaternion(globalOrient_r);
+                Vector3 globalOrientRod = new Vector3(motionPrimitive.smplx_params.Get(i, 3), motionPrimitive.smplx_params.Get(i, 4), motionPrimitive.smplx_params.Get(i, 5));
+                Matrix4x4 globalOrientMatrix = CoordinateHelper.RodriguesToMatrix(globalOrientRod);
+                Quaternion finalRot = CoordinateHelper.QuaternionFromMatrix(CoordinateHelper.ToUnity(transfRotmat * globalOrientMatrix));
+                human.transform.rotation = finalRot;
 
-                
-                Matrix4x4 globalOrient_m = new Matrix4x4();
-                globalOrient_m.SetTRS(Vector3.zero, globalOrient_q, Vector3.one);
-                //Quaternion q = QuaternionFromMatrix(transfRotmat);
 
-                //transfRotmat = Matrix4x4.identity;
-                Vector4 rotMatRow0 = new Vector4(1, 0, 0, 0);
-                Vector4 rotMatRow1 = new Vector4(0, 0, 1, 0);
-                Vector4 rotMatRow2 = new Vector4(0, 1, 0, 0);
-                Vector4 rotMatRow3 = new Vector4(0, 0, 0, 1);
-                Matrix4x4 rotMat = new Matrix4x4();
-                rotMat.SetRow(0, rotMatRow0);
-                rotMat.SetRow(1, rotMatRow1);
-                rotMat.SetRow(2, rotMatRow2);
-                rotMat.SetRow(3, rotMatRow3);
-                Quaternion final_q = QuaternionFromMatrix( rotMat * (transfRotmat * globalOrient_m));
-                //human.transform.rotation = new Quaternion(-final_q.x, final_q.y, final_q.z, -final_q.w);
-                human.transform.rotation = final_q;
-
-                //human.transform.Rotate(Vector3.left, -90);
-                //human.transform.Rotate(Vector3.up, 90);
-
-                //smplx.SetHandPose(SMPLX.HandPose.Relaxed);
                 smplx.UpdatePoseCorrectives();
                 smplx.UpdateJointPositions(false);
 
@@ -369,27 +319,17 @@ public class AnimationController : MonoBehaviour
         return clip;
     }
 
-    private Quaternion AaToQuaternion(Vector3 aa)
-    {
-        Vector3 rod = new Vector3(aa[0], aa[1], aa[2]);
-        float angle_rad = rod.magnitude;
-        float angle_deg = angle_rad * Mathf.Rad2Deg;
-        Vector3 axis = rod.normalized;
-        return Quaternion.AngleAxis(angle_deg, axis);
-    }
-    public Quaternion QuaternionFromMatrix(Matrix4x4 m)
-    {
-        return Quaternion.LookRotation(m.GetColumn(2), m.GetColumn(1));
-    }
+
+
     public void CreateWalkPoints(ArrayWrapper wPath, GameObject parentGo)
     {
-        walkingPath = new GameObject("Path");
+        GameObject walkingPath = new GameObject("Path");
         walkingPath.transform.parent = parentGo.transform;
-        walkPoints = new GameObject[wPath.shape[0]];
+        GameObject[] walkPoints = new GameObject[wPath.shape[0]];
         for (int i = 0; i < wPath.shape[0]; i++)
         {
             Vector3 position = new Vector3(wPath.Get(i, 0), wPath.Get(i, 1), wPath.Get(i, 2));
-            position = SmplxToUnity(position);
+            position = CoordinateHelper.ToUnity(position);
             walkPoints[i] = Instantiate(walkPointObject, position, Quaternion.identity, walkingPath.transform);
             walkPoints[i].name = "WalkPoint_" + i;
         }
@@ -458,106 +398,12 @@ public class AnimationController : MonoBehaviour
         clip.wrapMode = WrapMode.Loop;
         return clip;
     }
-    private void UnityToSmplx(NavMeshPath path)
+    private void UnityPathToGamma(NavMeshPath path)
     {
         for (int i = 0; i < path.corners.Length; i++)
         {
-            path.corners[i] = new Vector3(path.corners[i].x, path.corners[i].z, path.corners[i].y);
+            path.corners[i] = CoordinateHelper.ToGamma(path.corners[i]);
         }
-    }
-    private Vector3 SmplxToUnity(Vector3 v)
-    {
-        return new Vector3(v.x, v.z, v.y);
-    }
-    private void SmplxCoordsToUnity(GameObject goSmplxCoords)
-    {
-        goSmplxCoords.transform.Rotate(-90, 0, 0);
-    }
-
-    private void visualizeAnimationTranslations(Motion[] motionPrimitives, GameObject parentGo)
-    {
-        GameObject animationPath = new GameObject("AnimationPath");
-        animationPath.transform.parent = parentGo.transform;
-
-        int frame = 0;
-        List<Vector3> locations = new List<Vector3>();
-        foreach (Motion motionPrimitive in motionPrimitives)
-        {
-            Matrix4x4 transfRotmat = ArrayWrapper.ToY(motionPrimitive.transf_rotmat.GetTransfromMatrix());
-            Vector3 transfTransl = ArrayWrapper.ToY(motionPrimitive.transf_transl.GetVector3());
-            GameObject mp_pos = DrawShpere(transfTransl, Color.red, animationPath);
-            int i = 0;
-            string mpType = motionPrimitive.mp_type;
-            switch (mpType)
-            {
-                case "1-frame":
-                    i = 1;
-                    break;
-                case "2-frame":
-                    i = 2;
-                    break;
-                case "start-frame":
-                    i = 0;
-                    break;
-                default:
-                    break;
-            }
-            for (; i < nFramesMp; i++)
-            {
-                //Update Global Pose
-                // Translation 90 deg X, invert z scale
-                Vector3 transl = ArrayWrapper.ToY(motionPrimitive.pelvis_loc.GetVector3(i));
-                Vector3 t = motionPrimitive.pelvis_loc.GetVector3(i);
-
-                Vector3 final_dt = new Vector3(t.x, t.y, -t.z);
-                Vector4 rotMatRow0 = new Vector4(1, 0, 0, 0);
-                Vector4 rotMatRow1 = new Vector4(0, 0, -1, 0);
-                Vector4 rotMatRow2 = new Vector4(0, 1, 0, 0);
-                Vector4 rotMatRow3 = new Vector4(0, 0, 0, 1);
-                Matrix4x4 rotmMat = new Matrix4x4();
-                rotmMat.SetRow(0, rotMatRow0);
-                rotmMat.SetRow(1, rotMatRow1);
-                rotmMat.SetRow(2, rotMatRow2);
-                rotmMat.SetRow(3, rotMatRow3);
-
-
-                final_dt = rotmMat.MultiplyPoint3x4(transfRotmat.MultiplyPoint3x4(final_dt));
-                Vector3 localPosition = final_dt + transfTransl;
-
-                locations.Add(localPosition);
-                DrawShpere(localPosition, Color.yellow, mp_pos);
-                if(locations.Count >= 2)
-                {
-                    DrawLine(locations[^2], localPosition, animationPath);
-                }
-
-
-                frame++;
-            }
-        }
-    }
-    private void DrawLine(Vector3 start, Vector3 end, GameObject parentGo)
-    {
-        GameObject line = new GameObject("PathConnection");
-        line.transform.parent = parentGo.transform;
-        var lineRenderer = line.AddComponent<LineRenderer>();
-        lineRenderer.material = new Material(Shader.Find("Standard"));
-        lineRenderer.positionCount = 2;
-        lineRenderer.startColor = Color.yellow;
-        lineRenderer.endColor = Color.yellow;
-        lineRenderer.startWidth = 0.01f;
-        lineRenderer.endWidth = 0.01f;
-        lineRenderer.SetPosition(0, start);
-        lineRenderer.SetPosition(1, end);
-    }
-    private GameObject DrawShpere(Vector3 pos, Color color, GameObject parentGo)
-    {
-        GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        sphere.transform.parent = parentGo.transform;
-        sphere.transform.position = pos;
-        sphere.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
-        sphere.GetComponent<Renderer>().material.color = color;
-        return sphere;
     }
     private GameObject GetChildGameObject(GameObject fromGameObject, string withName)
     {

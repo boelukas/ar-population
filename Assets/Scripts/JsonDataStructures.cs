@@ -108,30 +108,6 @@ public class ArrayWrapper
         
 
     }
-    //public float[][][][] GetArray4D()
-    //{
-
-    //        array4d = new float[shape[0]][][][];
-    //        for (int i = 0; i < shape[0]; i++)
-    //        {
-    //            array4d[i] = new float[shape[1]][][];
-    //            for (int j = 0; j < shape[1]; j++)
-    //            {
-    //                array4d[i][j] = new float[shape[2]][];
-    //                for (int k = 0; k < shape[2]; k++)
-    //                {
-    //                    array4d[i][j][k] = new float[shape[3]];
-
-    //                    for (int l = 0; l < shape[3]; l++)
-    //                    {
-    //                        array4d[i][j][k][l] = Get(i, j, k, l);
-    //                    }
-    //                }
-    //            }
-    //        }
-    //        return array4d;
-
-    //}
 }
 
 [Serializable]

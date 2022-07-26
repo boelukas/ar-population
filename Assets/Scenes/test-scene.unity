@@ -1481,10 +1481,11 @@ MonoBehaviour:
   smplxFemale: {fileID: 813402265414023461, guid: 8bb52d8fb2e90cd4e874d9a44f2b221f, type: 3}
   smplxMale: {fileID: 5568697286347022951, guid: dc0ebcd35c98fe24fad61ed3ccbe29f9, type: 3}
   walkPointObject: {fileID: 919132149155446097, guid: 75ca130032d13ca48a4789d64f9909af, type: 3}
-  visualizePath: 1
-  visualizeWalkingPath: 1
+  visualizeNavMeshPath: 1
+  minNavMeshPathLength: 3
+  visualizeGammaWalkingPath: 1
   usePredefindedGammaAnswer: 0
-  jsonGammaResponse: {fileID: 4900000, guid: ee5b779baea03144ebf93883dfe313da, type: 3}
+  debugJsonGammaResponse: {fileID: 4900000, guid: ee5b779baea03144ebf93883dfe313da, type: 3}
 --- !u!4 &332954440
 Transform:
   m_ObjectHideFlags: 0
