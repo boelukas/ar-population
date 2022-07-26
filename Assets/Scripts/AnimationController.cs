@@ -268,8 +268,8 @@ public class AnimationController : MonoBehaviour
             {
                 count++;
                 found = NavMeshHelper.SamplePath(spatialMeshGo.GetComponent<MeshFilter>().mesh.bounds.center, spatialMeshGo.GetComponent<MeshFilter>().mesh.bounds.size, out sampPath);
-                float pathLength = PathLength(sampPath);
-                if (pathLength < minNavMeshPathLength)
+                //float pathLength = PathLength(sampPath);
+                if (found && PathLength(sampPath) < minNavMeshPathLength)
                 {
                     found = false;
                 }
