@@ -1,5 +1,6 @@
 using Microsoft.MixedReality.Toolkit;
 using Microsoft.MixedReality.Toolkit.SpatialAwareness;
+using Microsoft.MixedReality.Toolkit.UI;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -25,11 +26,17 @@ public class AnimationController : MonoBehaviour
 
     // Private members
     private GameObject sceneContent;
-    private GameObject spatialMeshGo;
+    private GameObject spatialMeshGo = null;
     private RequestHandler requestHandler;
     private System.Action<string> requestResponseCallback;
     private IMixedRealitySpatialAwarenessMeshObserver meshObserver;
     private List<GameObject> humans;
+
+    // Editing start and end position
+    private GameObject startPos;
+    private GameObject endPos;
+    private GameObject startPosButton = null;
+    private GameObject endPosButton = null;
 
     //Animation parameters
     private readonly int nFramesMp = 10;
@@ -86,17 +93,17 @@ public class AnimationController : MonoBehaviour
 
     public void CreateWalkingPathAnimation()
     {
-        if(humans.Count == 0)
+        if(spatialMeshGo == null)
         {
-            Debug.Log("Building Navigation Mesh.");
             BuildNavMeshOfSpatialMesh();
-            Debug.Log("Building Navigation Mesh - done");
         }
 
-        Debug.Log("Sample path.");
-        NavMeshPath samplePath = SampleNavMeshPath();
-        Debug.Log("Sample path - done");
-
+        NavMeshPath samplePath = new NavMeshPath();
+        bool pathFound = SampleNavMeshPath(out samplePath);
+        if (!pathFound)
+        {
+            return;
+        }
         if (visualizeNavMeshPath)
         {
             Debug.Log("Visualizing path");
@@ -159,6 +166,7 @@ public class AnimationController : MonoBehaviour
     private void BuildNavMeshOfSpatialMesh()
     {
         //var observer = CoreServices.GetSpatialAwarenessSystemDataProvider<IMixedRealitySpatialAwarenessMeshObserver>();
+        Debug.Log("Building Navigation Mesh.");
         var observer = meshObserver;
 
         // Loop through all known Meshes
@@ -187,26 +195,117 @@ public class AnimationController : MonoBehaviour
 
         // Deactivate spatial mesh
         observer.DisplayOption = SpatialAwarenessMeshDisplayOptions.None;
+        Debug.Log("Building Navigation Mesh - done");
 
     }
 
-    private NavMeshPath SampleNavMeshPath()
+    private bool SampleNavMeshPath(out NavMeshPath path)
     {
+        Debug.Log("Sample path.");
         NavMeshPath sampPath = new NavMeshPath();
         bool found = false;
-        int count = 0;
-        while (!found)
+        int maxTries = 50;
+        if (startPos != null && endPos != null)
         {
-            count++;
-            found = NavMeshHelper.SamplePath(spatialMeshGo.GetComponent<MeshFilter>().mesh.bounds.center, spatialMeshGo.GetComponent<MeshFilter>().mesh.bounds.size, out sampPath);
-            float pathLength = PathLength(sampPath);
-            if (pathLength < minNavMeshPathLength)
+            Debug.Log("All positions are set");
+            found = NavMeshHelper.CreatePath(startPos.transform.localPosition, endPos.transform.localPosition, out sampPath);
+        }
+        else if(startPos != null)
+        {
+            Debug.Log("Start pos is set");
+            int count = 0;
+            while (!found && count < maxTries)
             {
-                found = false;
+                count++;
+                found = NavMeshHelper.SamplePathFixedPoint(startPos.transform.localPosition, true, spatialMeshGo.GetComponent<MeshFilter>().mesh.bounds.size, out sampPath);
+                float pathLength = PathLength(sampPath);
+                if (pathLength < minNavMeshPathLength)
+                {
+                    found = false;
+                }
+            }
+            if (found) {
+                Debug.Log("Sampled path with length: " + PathLength(sampPath) + ", in " + count + " attempts.");
+            }
+            else
+            {
+                Debug.Log("No path found");
             }
         }
-        Debug.Log("Sampled path with length: " + PathLength(sampPath) +", in "+ count+" attempts.");
-        return sampPath;
+        else if(endPos != null)
+        {
+            Debug.Log("End pos is set");
+            int count = 0;
+            while (!found && count < maxTries)
+            {
+                count++;
+                found = NavMeshHelper.SamplePathFixedPoint(endPos.transform.localPosition, false, spatialMeshGo.GetComponent<MeshFilter>().mesh.bounds.size, out sampPath);
+                float pathLength = PathLength(sampPath);
+                if (pathLength < minNavMeshPathLength)
+                {
+                    found = false;
+                }
+            }
+            if (found)
+            {
+                Debug.Log("Sampled path with length: " + PathLength(sampPath) + ", in " + count + " attempts.");
+            }
+            else
+            {
+                Debug.Log("No path found");
+            }
+        }
+        else
+        {
+            Debug.Log("No pos is set");
+            int count = 0;
+            while (!found && count < maxTries)
+            {
+                count++;
+                found = NavMeshHelper.SamplePath(spatialMeshGo.GetComponent<MeshFilter>().mesh.bounds.center, spatialMeshGo.GetComponent<MeshFilter>().mesh.bounds.size, out sampPath);
+                float pathLength = PathLength(sampPath);
+                if (pathLength < minNavMeshPathLength)
+                {
+                    found = false;
+                }
+            }
+            if (found)
+            {
+                Debug.Log("Sampled path with length: " + PathLength(sampPath) + ", in " + count + " attempts.");
+            }
+            else
+            {
+                Debug.Log("No path found");
+            }
+        }
+        if (startPosButton != null)
+        {
+            startPosButton.GetComponent<Interactable>().IsToggled = false;
+        }
+        if (endPosButton != null)
+        {
+            endPosButton.GetComponent<Interactable>().IsToggled = false;
+        }
+        if (startPos != null)
+        {
+            Destroy(startPos);
+            startPos = null;
+        }
+        if (endPos != null)
+        {
+            Destroy(endPos);
+            endPos = null;
+        }
+
+        if (!found)
+        {
+            Debug.Log("No path found");
+        }
+
+        
+        Debug.Log("Sample path - done");
+        path = sampPath;
+        return found;
     }
 
     private float PathLength(NavMeshPath path)
@@ -411,5 +510,60 @@ public class AnimationController : MonoBehaviour
         Transform[] ts = fromGameObject.transform.GetComponentsInChildren<Transform>();
         foreach (Transform t in ts) if (t.gameObject.name == withName) return t.gameObject;
         return null;
+    }
+
+    public void SetNavMeshStartPos(GameObject setStartPosButton)
+    {
+        startPosButton = setStartPosButton;
+        bool toggled = setStartPosButton.GetComponent<Interactable>().IsToggled;
+        if (toggled)
+        {
+            if(spatialMeshGo == null)
+            {
+                BuildNavMeshOfSpatialMesh();
+            }
+            Vector3 cameraPos = Camera.main.transform.position;
+            Vector3 meshPos = NavMeshHelper.ClosestPointOnMesh(cameraPos);
+
+            startPos = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            startPos.name = "StartPosMarker";
+            startPos.transform.parent = spatialMeshGo.transform;
+            startPos.transform.position = meshPos;
+            startPos.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+            startPos.GetComponent<Renderer>().material.color = new Color(0, 1, 0, 1);
+        }
+        else
+        {
+            Destroy(startPos);
+            startPos = null;
+        }
+
+    }
+    public void SetNavMeshEndPos(GameObject setEndPosButton)
+    {
+        endPosButton = setEndPosButton;
+        bool toggled = setEndPosButton.GetComponent<Interactable>().IsToggled;
+        if (toggled)
+        {
+            if (spatialMeshGo == null)
+            {
+                BuildNavMeshOfSpatialMesh();
+            }
+            Vector3 cameraPos = Camera.main.transform.position;
+            Vector3 meshPos = NavMeshHelper.ClosestPointOnMesh(cameraPos);
+
+            endPos = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            endPos.name = "EndPosMarker";
+            endPos.transform.parent = spatialMeshGo.transform;
+            endPos.transform.position = meshPos;
+            endPos.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+            endPos.GetComponent<Renderer>().material.color = new Color(1, 0, 0, 1);
+        }
+        else
+        {
+            Destroy(endPos);
+            endPos = null;
+        }
+
     }
 }

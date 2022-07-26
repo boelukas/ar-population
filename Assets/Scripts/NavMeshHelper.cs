@@ -40,6 +40,43 @@ public class NavMeshHelper : MonoBehaviour
         path = path1;
         return pathFound;
     }
+    public static bool SamplePathFixedPoint(Vector3 fixedPointOnMesh, bool isStartPoint, Vector3 boundingBoxSize, out NavMeshPath path)
+    {
+        path = null;
+        NavMeshHit hit;
+
+        float maxDistance = Mathf.Max(Mathf.Max(boundingBoxSize.x, boundingBoxSize.y), boundingBoxSize.z);
+
+        Vector3 randomEnd = fixedPointOnMesh + Random.insideUnitSphere * maxDistance / 2;
+        randomEnd.y = fixedPointOnMesh.y;
+        bool foundEndPos = NavMesh.SamplePosition(randomEnd, out hit, maxDistance, NavMesh.AllAreas);
+        if (!foundEndPos)
+        {
+            return false;
+        }
+        Vector3 endPos = hit.position;
+
+        NavMeshPath path1 = new NavMeshPath();
+        bool pathFound;
+        if (isStartPoint)
+        {
+            pathFound = NavMesh.CalculatePath(fixedPointOnMesh, endPos, NavMesh.AllAreas, path1);
+        }
+        else
+        {
+            pathFound = NavMesh.CalculatePath(endPos, fixedPointOnMesh, NavMesh.AllAreas, path1);
+        }
+        path = path1;
+        return pathFound;
+    }
+    public static bool CreatePath(Vector3 startPosOnMesh, Vector3 endPosOnMesh, out NavMeshPath path)
+    {
+        NavMeshPath path1 = new NavMeshPath();
+        bool pathFound = NavMesh.CalculatePath(startPosOnMesh, endPosOnMesh, NavMesh.AllAreas, path1);
+        path = path1;
+        return pathFound;
+    }
+
     public static void VisualizePath(NavMeshPath path, GameObject parentGo)
     {
         GameObject pathObject = new GameObject("Path");
@@ -116,6 +153,22 @@ public class NavMeshHelper : MonoBehaviour
         lineRenderer.endWidth = 0.01f;
         lineRenderer.SetPosition(0, start);
         lineRenderer.SetPosition(1, end);
+    }
+
+    public static Vector3 ClosestPointOnMesh(Vector3 pos)
+    {
+        NavMeshHit hit;
+        bool foundEndPos = NavMesh.SamplePosition(pos, out hit, 3, NavMesh.AllAreas);
+        if (foundEndPos)
+        {
+            return hit.position;
+        }
+        else
+        {
+            Debug.Log("No point on mesh found");
+            return Vector3.zero;
+        }
+
     }
 
 }
