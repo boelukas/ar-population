@@ -159,7 +159,7 @@ public class AnimationController : MonoBehaviour
             smplx.modelType = SMPLX.ModelType.Male;
         }
         smplx.SetHandPose(SMPLX.HandPose.Relaxed);
-        SetBetas(gamma.motion[0].betas, smplx);
+        //SetBetas(gamma.motion[0].betas, smplx);
 
         InitAnimationCurves(human);
 
@@ -568,6 +568,7 @@ public class AnimationController : MonoBehaviour
                 BuildNavMeshOfSpatialMesh();
             }
             Vector3 cameraPos = Camera.main.transform.position;
+            cameraPos += new Vector3(0, -1.5f, 0);
             Vector3 meshPos = NavMeshHelper.ClosestPointOnMesh(cameraPos);
 
             startPos = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -595,6 +596,8 @@ public class AnimationController : MonoBehaviour
                 BuildNavMeshOfSpatialMesh();
             }
             Vector3 cameraPos = Camera.main.transform.position;
+            cameraPos += new Vector3(0, -1.5f, 0);
+
             Vector3 meshPos = NavMeshHelper.ClosestPointOnMesh(cameraPos);
 
             endPos = GameObject.CreatePrimitive(PrimitiveType.Sphere);
