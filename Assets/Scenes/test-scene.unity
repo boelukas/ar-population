@@ -2045,6 +2045,7 @@ MonoBehaviour:
   visualizeGammaWalkingPath: 1
   usePredefindedGammaAnswer: 0
   debugJsonGammaResponse: {fileID: 4900000, guid: ee5b779baea03144ebf93883dfe313da, type: 3}
+  exportAnimationCLipEditorOnly: 1
 --- !u!4 &332954440
 Transform:
   m_ObjectHideFlags: 0
