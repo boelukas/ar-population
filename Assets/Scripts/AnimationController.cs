@@ -3,6 +3,9 @@ using Microsoft.MixedReality.Toolkit.SpatialAwareness;
 using Microsoft.MixedReality.Toolkit.UI;
 using System.Collections.Generic;
 using System.Linq;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -23,6 +26,7 @@ public class AnimationController : MonoBehaviour
     //Debug
     public bool usePredefindedGammaAnswer = false;
     public TextAsset debugJsonGammaResponse;
+    public bool exportAnimationClipEditorOnly = true;
 
     // Private members
     private GameObject sceneContent;
@@ -69,11 +73,7 @@ public class AnimationController : MonoBehaviour
 
         sceneContent = GameObject.FindGameObjectsWithTag("SceneContent")[0];
 
-        if (usePredefindedGammaAnswer)
-        {
-            BuildNavMeshOfSpatialMesh();
-            ImportAnimation(debugJsonGammaResponse.text);
-        }
+        
         var spatialAwarenessService = CoreServices.SpatialAwarenessSystem;
         var dataProviderAccess = spatialAwarenessService as IMixedRealityDataProviderAccess;
         var fakeMeshObserverName = "Spatial Object Mesh Observer";
@@ -98,11 +98,16 @@ public class AnimationController : MonoBehaviour
 
     public void CreateWalkingPathAnimation()
     {
-        if(spatialMeshGo == null)
+        Application.targetFrameRate = 60;
+        if (spatialMeshGo == null)
         {
             BuildNavMeshOfSpatialMesh();
         }
-
+        if (usePredefindedGammaAnswer)
+        {
+            ImportAnimation(debugJsonGammaResponse.text);
+            return;
+        }
         NavMeshPath samplePath = new NavMeshPath();
         bool pathFound = SampleNavMeshPath(out samplePath);
         if (!pathFound)
@@ -163,6 +168,8 @@ public class AnimationController : MonoBehaviour
         Debug.Log("Importing Animation - done");
 
         Animation anim = human.AddComponent<Animation>();
+        anim.cullingType = AnimationCullingType.BasedOnRenderers;
+
         anim.AddClip(clip, "pathWalking");
         anim.Play("pathWalking");
         Debug.Log("Playing Animation");
@@ -426,8 +433,14 @@ public class AnimationController : MonoBehaviour
             }
         }
         AnimationClip clip = StopRecording();
-        //AssetDatabase.CreateAsset(clip, "Assets/testclip2.anim");
-        //AssetDatabase.SaveAssets();
+#if UNITY_EDITOR
+        if (Application.isEditor && exportAnimationClipEditorOnly)
+        {
+            AssetDatabase.CreateAsset(clip, "Assets/AnimationClips/testclip2.anim");
+            AssetDatabase.SaveAssets();
+            Debug.Log("Exported Animation Clip");
+        }
+#endif
         return clip;
     }
 
@@ -494,22 +507,40 @@ public class AnimationController : MonoBehaviour
     {
         AnimationClip clip = new AnimationClip();
         clip.legacy = true;
+        int nAminCurves = 0;
         for (int i = 0; i < nChildren; i++)
         {
             string relPath = childrenPaths[i];
-            clip.SetCurve(relPath, typeof(Transform), "localPosition.x", positionCurves[i][0]);
-            clip.SetCurve(relPath, typeof(Transform), "localPosition.y", positionCurves[i][1]);
-            clip.SetCurve(relPath, typeof(Transform), "localPosition.z", positionCurves[i][2]);
-            clip.SetCurve(relPath, typeof(Transform), "localRotation.x", rotationCurves[i][0]);
-            clip.SetCurve(relPath, typeof(Transform), "localRotation.y", rotationCurves[i][1]);
-            clip.SetCurve(relPath, typeof(Transform), "localRotation.z", rotationCurves[i][2]);
-            clip.SetCurve(relPath, typeof(Transform), "localRotation.w", rotationCurves[i][3]);
-            clip.SetCurve(relPath, typeof(Transform), "localScale.x", scaleCurves[i][0]);
-            clip.SetCurve(relPath, typeof(Transform), "localScale.y", scaleCurves[i][1]);
-            clip.SetCurve(relPath, typeof(Transform), "localScale.z", scaleCurves[i][2]);
+            nAminCurves += SetCurveFilterConstants(clip, relPath, "localPosition.x", positionCurves[i][0]);
+            nAminCurves += SetCurveFilterConstants(clip, relPath, "localPosition.y", positionCurves[i][1]);
+            nAminCurves += SetCurveFilterConstants(clip, relPath, "localPosition.z", positionCurves[i][2]);
+            nAminCurves += SetCurveFilterConstants(clip, relPath, "localRotation.x", rotationCurves[i][0]);
+            nAminCurves += SetCurveFilterConstants(clip, relPath, "localRotation.y", rotationCurves[i][1]);
+            nAminCurves += SetCurveFilterConstants(clip, relPath, "localRotation.z", rotationCurves[i][2]);
+            nAminCurves += SetCurveFilterConstants(clip, relPath, "localRotation.w", rotationCurves[i][3]);
+            nAminCurves += SetCurveFilterConstants(clip, relPath, "localScale.x", scaleCurves[i][0]);
+            nAminCurves += SetCurveFilterConstants(clip, relPath, "localScale.y", scaleCurves[i][1]);
+            nAminCurves += SetCurveFilterConstants(clip, relPath, "localScale.z", scaleCurves[i][2]);
         }
         clip.wrapMode = WrapMode.Loop;
+        Debug.Log("Clip created with " + nAminCurves + " Animation Curves");
         return clip;
+    }
+
+    private int SetCurveFilterConstants(AnimationClip clip, string relativePath, string propertyName, AnimationCurve curve)
+    {
+        float threshold = 0.000001f;
+        float startValue = curve.keys[0].value;
+        float endValue = curve.keys[^1].value;
+        if(Mathf.Abs(startValue - endValue) >= threshold)
+        {
+            clip.SetCurve(relativePath, typeof(Transform), propertyName, curve);
+            return 1;
+        }
+        else
+        {
+            return 0;
+        }
     }
     private void UnityPathToGamma(NavMeshPath path)
     {
