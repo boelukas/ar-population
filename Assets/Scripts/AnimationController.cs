@@ -425,8 +425,8 @@ public class AnimationController : MonoBehaviour
                 human.transform.rotation = finalRot;
 
 
-                smplx.UpdatePoseCorrectives();
-                smplx.UpdateJointPositions(false);
+                //smplx.UpdatePoseCorrectives();
+                //smplx.UpdateJointPositions(false);
 
                 TakeSnapshot(deltaT * frame);
                 frame++;
