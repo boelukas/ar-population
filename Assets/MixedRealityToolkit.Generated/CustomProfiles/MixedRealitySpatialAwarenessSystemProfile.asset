@@ -27,7 +27,7 @@ MonoBehaviour:
     componentName: OpenXR Spatial Mesh Observer
     priority: 0
     runtimePlatform: 9
-    observerProfile: {fileID: 11400000, guid: 8be0bcd2117dd214da41ed98f0def2e3, type: 2}
+    observerProfile: {fileID: 11400000, guid: cd976c534f18edf4591da66a5119fc5b, type: 2}
   - componentType:
       reference: Microsoft.MixedReality.Toolkit.SpatialObjectMeshObserver.SpatialObjectMeshObserver,
         Microsoft.MixedReality.Toolkit.Providers.ObjectMeshObserver
