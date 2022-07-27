@@ -199,7 +199,15 @@ public class AnimationController : MonoBehaviour
         spatialMeshGo.GetComponent<NavMeshSurface>().BuildNavMesh();
 
         // Deactivate spatial mesh
-        observer.DisplayOption = SpatialAwarenessMeshDisplayOptions.Occlusion;
+        if (Application.isEditor)
+        {
+            observer.DisplayOption = SpatialAwarenessMeshDisplayOptions.None;
+        }
+        else
+        {
+            observer.DisplayOption = SpatialAwarenessMeshDisplayOptions.Occlusion;
+        }
+
         Debug.Log("Building Navigation Mesh - done");
 
     }
