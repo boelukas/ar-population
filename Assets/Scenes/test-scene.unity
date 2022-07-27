@@ -2045,7 +2045,7 @@ MonoBehaviour:
   visualizeGammaWalkingPath: 1
   usePredefindedGammaAnswer: 0
   debugJsonGammaResponse: {fileID: 4900000, guid: ee5b779baea03144ebf93883dfe313da, type: 3}
-  exportAnimationCLipEditorOnly: 1
+  exportAnimationClipEditorOnly: 1
 --- !u!4 &332954440
 Transform:
   m_ObjectHideFlags: 0
@@ -5094,7 +5094,6 @@ GameObject:
   m_Component:
   - component: {fileID: 901063664}
   - component: {fileID: 901063667}
-  - component: {fileID: 901063666}
   - component: {fileID: 901063665}
   m_Layer: 0
   m_Name: TextMeshPro
@@ -5215,14 +5214,6 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_renderer: {fileID: 901063667}
   m_maskType: 0
---- !u!222 &901063666
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 901063663}
-  m_CullTransparentMesh: 0
 --- !u!23 &901063667
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -9319,7 +9310,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1950126540}
   - component: {fileID: 1950126543}
-  - component: {fileID: 1950126542}
   - component: {fileID: 1950126541}
   m_Layer: 0
   m_Name: TextMeshPro
@@ -9440,14 +9430,6 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_renderer: {fileID: 1950126543}
   m_maskType: 0
---- !u!222 &1950126542
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1950126539}
-  m_CullTransparentMesh: 0
 --- !u!23 &1950126543
 MeshRenderer:
   m_ObjectHideFlags: 0
