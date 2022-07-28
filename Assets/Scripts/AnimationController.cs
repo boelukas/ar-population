@@ -62,6 +62,8 @@ public class AnimationController : MonoBehaviour
     private Transform[] childrenTransforms;
     private int nChildren;
 
+    private float floorY = float.NaN;
+
 
     void Start()
     {
@@ -322,7 +324,7 @@ public class AnimationController : MonoBehaviour
             Debug.Log("No path found");
         }
 
-        
+
         Debug.Log("Sample path - done");
         path = sampPath;
         return found;
@@ -424,7 +426,7 @@ public class AnimationController : MonoBehaviour
                 Quaternion finalRot = CoordinateHelper.QuaternionFromMatrix(CoordinateHelper.ToUnity(transfRotmat * globalOrientMatrix));
                 human.transform.rotation = finalRot;
 
-
+                FloorAlignment(human);
                 //smplx.UpdatePoseCorrectives();
                 //smplx.UpdateJointPositions(false);
 
@@ -443,9 +445,50 @@ public class AnimationController : MonoBehaviour
 #endif
         return clip;
     }
+    private void FloorAlignment(GameObject human)
+    {
+        GameObject rightFoot = GetChildGameObject(human, "right_foot");
+        GameObject leftFoot = GetChildGameObject(human, "left_foot");
+        Vector3 rightPos = rightFoot.transform.position;
+        Vector3 leftPos = leftFoot.transform.position;
+        Vector3 meshPos;
+        Vector3 correction;
+        if(rightPos.y < leftPos.y)
+        {
+            meshPos = NavMeshHelper.ClosestPointOnMesh(rightPos);
+            if(floorY is float.NaN)
+            {
+                floorY = meshPos.y;
+            }
+            else
+            {
+                if (Mathf.Abs(meshPos.y - floorY) < 0.05)
+                {
+                    floorY = meshPos.y;
+                }
+            }
+            correction = new Vector3(0, floorY - rightPos.y, 0);
+        }
+        else
+        {
+            meshPos = NavMeshHelper.ClosestPointOnMesh(leftPos);
+            if (floorY is float.NaN)
+            {
+                floorY = meshPos.y;
+            }
+            else
+            {
+                if (Mathf.Abs(meshPos.y - floorY) < 0.05)
+                {
+                    floorY = meshPos.y;
+                }
+            }
+            correction = new Vector3(0, floorY - leftPos.y, 0);
 
+        }
+        human.transform.position += correction; 
 
-
+    }
     public GameObject CreateWalkPoints(ArrayWrapper wPath, GameObject parentGo)
     {
         GameObject walkingPath = new GameObject("Path");
