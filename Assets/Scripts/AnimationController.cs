@@ -19,7 +19,7 @@ public class AnimationController : MonoBehaviour
     // NavMesh path properties
     public bool visualizeNavMeshPath = true;
     public int minNavMeshPathLength = 3;
-
+    public Material spatialMeshMat;
     // GAMMA walking path properties
     public bool visualizeGammaWalkingPath = true;
 
@@ -195,7 +195,7 @@ public class AnimationController : MonoBehaviour
         spatialMeshGo.transform.parent = sceneContent.transform;
         spatialMeshGo.AddComponent<MeshFilter>();
         spatialMeshGo.AddComponent<MeshRenderer>();
-        spatialMeshGo.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Diffuse"));
+        spatialMeshGo.GetComponent<MeshRenderer>().material = spatialMeshMat;
         spatialMeshGo.AddComponent<MeshCollider>();
         spatialMeshGo.GetComponent<MeshFilter>().mesh = new Mesh();
         spatialMeshGo.GetComponent<MeshFilter>().mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;

@@ -2042,6 +2042,7 @@ MonoBehaviour:
   walkPointObject: {fileID: 919132149155446097, guid: 75ca130032d13ca48a4789d64f9909af, type: 3}
   visualizeNavMeshPath: 1
   minNavMeshPathLength: 3
+  spatialMeshMat: {fileID: 2100000, guid: 5a74c8b3858e9eb4f988ad14073b2f9f, type: 2}
   visualizeGammaWalkingPath: 1
   usePredefindedGammaAnswer: 0
   debugJsonGammaResponse: {fileID: 4900000, guid: ee5b779baea03144ebf93883dfe313da, type: 3}
