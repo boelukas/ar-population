@@ -993,6 +993,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e34c66795ee7424c93b3a0bcc64bba2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  logFileName: log.txt
+  maxLogFileSize: 1000000
 --- !u!1 &72239818
 GameObject:
   m_ObjectHideFlags: 0
@@ -2937,7 +2939,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 220823492}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.6}
+  m_LocalPosition: {x: 0, y: -0.3, z: 0.6}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3805,15 +3807,14 @@ MonoBehaviour:
   smplxFemale: {fileID: 813402265414023461, guid: 8bb52d8fb2e90cd4e874d9a44f2b221f, type: 3}
   smplxMale: {fileID: 5568697286347022951, guid: dc0ebcd35c98fe24fad61ed3ccbe29f9, type: 3}
   walkPointObject: {fileID: 919132149155446097, guid: 75ca130032d13ca48a4789d64f9909af, type: 3}
-  visualizeNavMeshPath: 1
-  minNavMeshPathLength: 3
+  visualizespatialMeshPath: 1
   spatialMeshMat: {fileID: 2100000, guid: 5a74c8b3858e9eb4f988ad14073b2f9f, type: 2}
-  useExportedNavMesh: 0
   visualizeGammaWalkingPath: 1
   usePredefindedGammaAnswer: 0
   debugJsonGammaResponse: {fileID: 4900000, guid: ee5b779baea03144ebf93883dfe313da, type: 3}
   exportAnimationClipEditorOnly: 1
-  serverSettings: {fileID: 220823492}
+  serverSettingsGo: {fileID: 220823492}
+  dialogController: {fileID: 1950916306}
 --- !u!4 &332954440
 Transform:
   m_ObjectHideFlags: 0

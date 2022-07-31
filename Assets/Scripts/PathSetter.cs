@@ -1,11 +1,8 @@
 using Microsoft.MixedReality.Toolkit;
 using Microsoft.MixedReality.Toolkit.Input;
-using Microsoft.MixedReality.Toolkit.SpatialAwareness;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-using SpatialAwarenessHandler = Microsoft.MixedReality.Toolkit.SpatialAwareness.IMixedRealitySpatialAwarenessObservationHandler<Microsoft.MixedReality.Toolkit.SpatialAwareness.SpatialAwarenessMeshObject>;
 public class PathSetter : MonoBehaviour, IMixedRealityPointerHandler
 {
     public GameObject path;
@@ -53,7 +50,7 @@ public class PathSetter : MonoBehaviour, IMixedRealityPointerHandler
             wayPoints.Add(cornerSphere);
             if(wayPoints.Count > 1)
             {
-                NavMeshHelper.DrawLine(wayPoints[^2].transform.position, wayPoints[^1].transform.position, path);
+                DrawLine(wayPoints[^2].transform.position, wayPoints[^1].transform.position, path);
             }
         }
     }
@@ -79,6 +76,20 @@ public class PathSetter : MonoBehaviour, IMixedRealityPointerHandler
     public void SetParent(GameObject p)
     {
         parentGo = p;
+    }
+    public static void DrawLine(Vector3 start, Vector3 end, GameObject parentGo)
+    {
+        GameObject line = new GameObject("PathConnection");
+        line.transform.parent = parentGo.transform;
+        var lineRenderer = line.AddComponent<LineRenderer>();
+        lineRenderer.material = new Material(Shader.Find("Standard"));
+        lineRenderer.positionCount = 2;
+        lineRenderer.startWidth = 0.01f;
+        lineRenderer.endWidth = 0.01f;
+        lineRenderer.SetPosition(0, start);
+        lineRenderer.SetPosition(1, end);
+        line.GetComponent<Renderer>().material.color = Color.green;
+
     }
 
     public void OnPointerDown(MixedRealityPointerEventData eventData)

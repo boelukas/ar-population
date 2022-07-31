@@ -17,20 +17,18 @@ public class ServerSettings : MonoBehaviour
     private System.Action<bool> requestResponseCallback;
 
 
-    // Start is called before the first frame update
     void Awake()
     {
-        requestHandler = new RequestHandler();
+        requestHandler = gameObject.AddComponent<RequestHandler>();
         requestResponseCallback = new System.Action<bool>(SetSuccess);
 
     }
     private void OnEnable()
     {
-        ReadConfig();
+        ReadConfigFile();
         var inputFildScript = inputField.GetComponent<MRTKTMPInputField>();
         inputFildScript.text = config.gammaServer;
         PingServer();
-        Debug.Log(config.gammaServer);
     }
 
     private void SetSuccess(bool success)
@@ -40,11 +38,11 @@ public class ServerSettings : MonoBehaviour
     public void PingServer()
     {
 
-        Debug.Log("Sending GET");
+        Debug.Log("[ServerSettings] Sending GET request.");
         StartCoroutine(requestHandler.GetRequest(config.gammaServer, requestResponseCallback));
     }
 
-    void ReadConfig()
+    public void ReadConfigFile()
     {
         string path = Path.Combine(Application.persistentDataPath, configFileName);
         if (System.IO.File.Exists(path) && new FileInfo(path).Length > 0)
@@ -56,16 +54,11 @@ public class ServerSettings : MonoBehaviour
                 {
                     string content = reader.ReadToEnd();
                     config = JsonUtility.FromJson<Config>(content);
-
-
-                    //string[] split = content.Split(' ');
-                    //mWidth = Int32.Parse(split[0]);
-                    //mHeight = Int32.Parse(split[1]);
                 }
             }
             catch (Exception e)
             {
-                Debug.Log("File Read Exception: " + e.Message);
+                Debug.Log("[ServerSettings] File Read Exception: " + e.Message);
             }
         }
         else
@@ -83,11 +76,11 @@ public class ServerSettings : MonoBehaviour
             }
             catch (Exception e)
             {
-                Debug.Log("File Write Exception: " + e.Message);
+                Debug.Log("[ServerSettings] File Write Exception: " + e.Message);
             }
         }
     }
-    private void WriteConfig()
+    private void WriteConfigFile()
     {
         string path = Path.Combine(Application.persistentDataPath, configFileName);
         try
@@ -101,13 +94,15 @@ public class ServerSettings : MonoBehaviour
         }
         catch (Exception e)
         {
-            Debug.Log("File Write Exception: " + e.Message);
+            Debug.Log("[ServerSettings] File Write Exception: " + e.Message);
         }
     }
     public void UpdateGammaServerName(GameObject inputField)
     {
+        Debug.Log("[ServerSettings][GUI] Updating Gamma server name");
+
         config.gammaServer = inputField.GetComponent<MRTKTMPInputField>().text;
-        WriteConfig();
+        WriteConfigFile();
         PingServer();
     }
 }

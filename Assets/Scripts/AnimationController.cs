@@ -17,25 +17,30 @@ public class AnimationController : MonoBehaviour
     public GameObject smplxMale;
     public GameObject walkPointObject;
 
-    // NavMesh path properties
-    public bool visualizeNavMeshPath = true;
-    public int minNavMeshPathLength = 3;
+    // SpatialMesh path properties
+    public bool visualizespatialMeshPath = true;
     public Material spatialMeshMat;
-    public bool useExportedNavMesh = false;
 
     // GAMMA walking path properties
     public bool visualizeGammaWalkingPath = true;
+    public bool pathVisibilitySwitchIsToggle = true;
 
-    //Debug
+    // Debug
     public bool usePredefindedGammaAnswer = false;
     public TextAsset debugJsonGammaResponse;
     public bool exportAnimationClipEditorOnly = true;
-    public GameObject serverSettings;
+
+    // GAMMA server
+    public GameObject serverSettingsGo;
+    private ServerSettings serverSettings;
+    private bool isWaitingForGammaResponse;
+
+    // UX
+    public DialogController dialogController;
+
 
     // Private members
-    private GameObject sceneContent;
     private GameObject animations;
-    private GameObject spatialMeshGo = null;
     private RequestHandler requestHandler;
     private System.Action<string> requestResponseCallback;
     private System.Action requestFailureCallback;
@@ -47,14 +52,10 @@ public class AnimationController : MonoBehaviour
     private Vector3[] currentPath;
     private bool spatialMeshVisWasActive;
 
-    // Editing start and end position
-    private GameObject startPos;
-    private GameObject endPos;
-    private GameObject startPosButton = null;
-    private GameObject endPosButton = null;
+    // Path Setter
     private PathSetter pathSetter;
 
-    //Animation parameters
+    // Animation parameters
     private readonly int nFramesMp = 10;
     private readonly float deltaT = 0.05f;
 
@@ -88,13 +89,10 @@ public class AnimationController : MonoBehaviour
         animations = new GameObject("animations");
         pathSetter = gameObject.AddComponent<PathSetter>();
         pathSetter.SetParent(animations);
-
+        dialogController = GameObject.Find("DialogController").GetComponent<DialogController>();
+        serverSettings = serverSettingsGo.GetComponent<ServerSettings>();
         animations.transform.parent = GameObject.Find("MixedRealitySceneContent").transform;
-        if (useExportedNavMesh)
-        {
-            pathSetter.enabled = false;
-        }
-        sceneContent = GameObject.FindGameObjectsWithTag("SceneContent")[0];        
+       
         var spatialAwarenessService = CoreServices.SpatialAwarenessSystem;
         var dataProviderAccess = spatialAwarenessService as IMixedRealityDataProviderAccess;
         var fakeMeshObserverName = "Spatial Object Mesh Observer";
@@ -113,59 +111,65 @@ public class AnimationController : MonoBehaviour
 
     public void CreateWalkingPathAnimation()
     {
-        Application.targetFrameRate = 60;
-        if (spatialMeshGo == null && useExportedNavMesh)
-        {
-            BuildNavMeshOfSpatialMesh();
-        }
+        Debug.Log("[Animation Controller][GUI] Creating path walking animation.");
+
         if (usePredefindedGammaAnswer)
         {
+            Debug.Log("[Animation Controller] Using predefinded debug Gamma response.");
             ImportAnimation(debugJsonGammaResponse.text);
             return;
         }
-        if (useExportedNavMesh)
-        {
-            NavMeshPath samplePath = new NavMeshPath();
-            bool pathFound = SampleNavMeshPath(out samplePath);
-            if (!pathFound)
-            {
-                return;
-            }
-            currentPath = samplePath.corners;
-            if (visualizeNavMeshPath)
-            {
-                Debug.Log("Visualizing path");
-                spatialMeshPaths.Add(NavMeshHelper.VisualizePath(samplePath, animations));
-                Debug.Log("Visualizing path - done");
 
-            }
-        }
-        else
+        if (isWaitingForGammaResponse)
         {
-            currentPath = pathSetter.GetWayPoints();
-            spatialMeshPaths.Add(pathSetter.path);
-            if (currentPath.Length < 2)
-            {
-                return;
-            }
-            pathSetter.ResetPath(!visualizeNavMeshPath);
+            Debug.Log("[Animation Controller] Waiting for previous path to finish computing.");
+            dialogController.OpenDialog("Error", "Waiting for current path to finish computing.");
+            return;
         }
+        currentPath = pathSetter.GetWayPoints();
+        spatialMeshPaths.Add(pathSetter.path);
 
-        string jsonPath = NavMeshHelper.PathToJson(UnityPathToGamma(currentPath));
-        Debug.Log("Sending request to GAMMA.");
-        requestHandler.Request(jsonPath, requestResponseCallback, requestFailureCallback);
+        if (currentPath.Length < 2)
+        {
+            Debug.Log("[Animation Controller] Current path not long enough. Path length: "+ currentPath.Length);
+            dialogController.OpenDialog("Error", "Current path is not long enough. Add more way points.");
+            return;
+        }
+        pathSetter.ResetPath(!visualizespatialMeshPath);
+        
+        string jsonPath = PathToJson(UnityPathToGamma(currentPath));
+        Debug.Log("[Animation Controller] Sending request to GAMMA.");
+        serverSettings.ReadConfigFile();
+        isWaitingForGammaResponse = true;
+        ChangePathColor(spatialMeshPaths[^1], Color.yellow);
+        requestHandler.PostRequest(serverSettings.config.gammaServer, jsonPath, requestResponseCallback, requestFailureCallback);
     }
 
+    public static string PathToJson(Vector3[] pathCorners)
+    {
+        float[] points = new float[pathCorners.Length * 3];
+        int j = 0;
+        for (int i = 0; i < pathCorners.Length * 3; i += 3)
+        {
+            points[i] = pathCorners[j].x;
+            points[i + 1] = pathCorners[j].y;
+            points[i + 2] = pathCorners[j].z;
+            j++;
+
+        }
+        return "[" + string.Join(", ", points) + "]";
+    }
     private void CleanUpAfterFailedRequest()
     {
         GameObject lastPath = spatialMeshPaths[^1];
         spatialMeshPaths.Remove(lastPath);
         Destroy(lastPath);
         ResetPath();
+        isWaitingForGammaResponse=false;
     }
     private void ImportAnimation(string jsonString)
     {
-        Debug.Log("Importing Animation");
+        Debug.Log("[Animation Controller] Importing Animation.");
         GammaDataStructure gamma = JsonUtility.FromJson<GammaDataStructure>(jsonString);
         GameObject human;
         if (gamma.motion[0].gender == "female")
@@ -178,10 +182,8 @@ public class AnimationController : MonoBehaviour
         }
         if (visualizeGammaWalkingPath)
         {
-            Debug.Log("Visualizing walking path");
+            Debug.Log("[Animation Controller] Visualizing Gamma walking path.");
             gammaPaths.Add(CreateWalkPoints(gamma.wpath, animations));
-            Debug.Log("Visualizing walking path - done");
-
         }
         humans.Add(human);
         human.name = "human_" + humans.Count;
@@ -199,54 +201,22 @@ public class AnimationController : MonoBehaviour
 
         InitAnimationCurves(human);
 
-        //visualizeAnimationTranslations(gamma.motion, spatialMeshGo);
         AnimationClip clip = CreateAnimationClip(gamma.motion, smplx, human);
-        Debug.Log("Importing Animation - done");
 
         Animation anim = human.AddComponent<Animation>();
         anim.cullingType = AnimationCullingType.BasedOnRenderers;
 
         anim.AddClip(clip, "pathWalking");
         anim.Play("pathWalking");
-        Debug.Log("Playing Animation");
-    }
-
-    private void BuildNavMeshOfSpatialMesh()
-    {
-        //var observer = CoreServices.GetSpatialAwarenessSystemDataProvider<IMixedRealitySpatialAwarenessMeshObserver>();
-        Debug.Log("Building Navigation Mesh.");
-        var observer = meshObserver;
-
-        // Loop through all known Meshes
-        CombineInstance[] combine = new CombineInstance[observer.Meshes.Count];
-        int i = 0;
-        foreach (SpatialAwarenessMeshObject meshObject in observer.Meshes.Values)
+        Debug.Log("[Animation Controller] Playing animation.");
+        isWaitingForGammaResponse = false;
+        if (!pathVisibilitySwitchIsToggle)
         {
-            Mesh mesh = meshObject.Filter.mesh;
-            combine[i].mesh = meshObject.Filter.sharedMesh;
-            combine[i].transform = meshObject.Filter.transform.localToWorldMatrix;
-            i++;
+            spatialMeshPaths[^1].SetActive(false);
+            gammaPaths[^1].SetActive(false);
         }
-        spatialMeshGo = new GameObject("SpatialMesh");
-        spatialMeshGo.transform.parent = animations.transform;
-        spatialMeshGo.AddComponent<MeshFilter>();
-        spatialMeshGo.AddComponent<MeshRenderer>();
-        spatialMeshGo.GetComponent<MeshRenderer>().material = spatialMeshMat;
-        spatialMeshGo.AddComponent<MeshCollider>();
-        spatialMeshGo.GetComponent<MeshFilter>().mesh = new Mesh();
-        spatialMeshGo.GetComponent<MeshFilter>().mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-
-        spatialMeshGo.GetComponent<MeshFilter>().mesh.CombineMeshes(combine);
-        spatialMeshGo.SetActive(true);
-        spatialMeshGo.AddComponent<NavMeshSurface>();
-        spatialMeshGo.GetComponent<NavMeshSurface>().BuildNavMesh();
-
-        // Deactivate spatial mesh
-        HideSpatialMesh();
-
-        Debug.Log("Building Navigation Mesh - done");
-
     }
+
     private void HideSpatialMesh()
     {
         if (Application.isEditor)
@@ -264,127 +234,7 @@ public class AnimationController : MonoBehaviour
         meshObserver.DisplayOption = SpatialAwarenessMeshDisplayOptions.Visible;
 
     }
-    private bool SampleNavMeshPath(out NavMeshPath path)
-    {
-        Debug.Log("Sample path.");
-        NavMeshPath sampPath = new NavMeshPath();
-        bool found = false;
-        int maxTries = 50;
-        if (startPos != null && endPos != null)
-        {
-            Debug.Log("All positions are set");
-            found = NavMeshHelper.CreatePath(startPos.transform.localPosition, endPos.transform.localPosition, out sampPath);
-        }
-        else if(startPos != null)
-        {
-            Debug.Log("Start pos is set");
-            int count = 0;
-            while (!found && count < maxTries)
-            {
-                count++;
-                found = NavMeshHelper.SamplePathFixedPoint(startPos.transform.localPosition, true, spatialMeshGo.GetComponent<MeshFilter>().mesh.bounds.size, out sampPath);
-                float pathLength = PathLength(sampPath);
-                if (pathLength < minNavMeshPathLength)
-                {
-                    found = false;
-                }
-            }
-            if (found) {
-                Debug.Log("Sampled path with length: " + PathLength(sampPath) + ", in " + count + " attempts.");
-            }
-            else
-            {
-                Debug.Log("No path found");
-            }
-        }
-        else if(endPos != null)
-        {
-            Debug.Log("End pos is set");
-            int count = 0;
-            while (!found && count < maxTries)
-            {
-                count++;
-                found = NavMeshHelper.SamplePathFixedPoint(endPos.transform.localPosition, false, spatialMeshGo.GetComponent<MeshFilter>().mesh.bounds.size, out sampPath);
-                float pathLength = PathLength(sampPath);
-                if (pathLength < minNavMeshPathLength)
-                {
-                    found = false;
-                }
-            }
-            if (found)
-            {
-                Debug.Log("Sampled path with length: " + PathLength(sampPath) + ", in " + count + " attempts.");
-            }
-            else
-            {
-                Debug.Log("No path found");
-            }
-        }
-        else
-        {
-            Debug.Log("No pos is set");
-            int count = 0;
-            while (!found && count < maxTries)
-            {
-                count++;
-                found = NavMeshHelper.SamplePath(spatialMeshGo.GetComponent<MeshFilter>().mesh.bounds.center, spatialMeshGo.GetComponent<MeshFilter>().mesh.bounds.size, out sampPath);
-                //float pathLength = PathLength(sampPath);
-                if (found && PathLength(sampPath) < minNavMeshPathLength)
-                {
-                    found = false;
-                }
-            }
-            if (found)
-            {
-                Debug.Log("Sampled path with length: " + PathLength(sampPath) + ", in " + count + " attempts.");
-            }
-            else
-            {
-                Debug.Log("No path found");
-            }
-        }
-        if (startPosButton != null)
-        {
-            startPosButton.GetComponent<Interactable>().IsToggled = false;
-        }
-        if (endPosButton != null)
-        {
-            endPosButton.GetComponent<Interactable>().IsToggled = false;
-        }
-        if (startPos != null)
-        {
-            Destroy(startPos);
-            startPos = null;
-        }
-        if (endPos != null)
-        {
-            Destroy(endPos);
-            endPos = null;
-        }
-
-        if (!found)
-        {
-            Debug.Log("No path found");
-        }
-
-
-        Debug.Log("Sample path - done");
-        path = sampPath;
-        return found;
-    }
-
-    private float PathLength(NavMeshPath path)
-    {
-        float length = 0f;
-        Vector3[] corners = path.corners;
-        for (int i = 1; i < corners.Length; i++)
-        {
-            float segmentLength = (corners[i] - corners[i - 1]).magnitude;
-            length += segmentLength;
-        }
-        return length;
-
-    }
+    
     private void InitAnimationCurves(GameObject human)
     {
         childrenTransforms = human.transform.GetComponentsInChildren<Transform>(true);
@@ -418,6 +268,7 @@ public class AnimationController : MonoBehaviour
 
     public AnimationClip CreateAnimationClip(Motion[] motionPrimitives, SMPLX smplx, GameObject human)
     {
+        Debug.Log("[Animation Controller] Creating animation clip.");
         int frame = 0;
         foreach (Motion motionPrimitive in motionPrimitives)
         {
@@ -469,7 +320,7 @@ public class AnimationController : MonoBehaviour
                 Quaternion finalRot = CoordinateHelper.QuaternionFromMatrix(CoordinateHelper.ToUnity(transfRotmat * globalOrientMatrix));
                 human.transform.rotation = finalRot;
 
-                FloorAlignment2(human);
+                FloorAlignment(human);
                 //smplx.UpdatePoseCorrectives();
                 //smplx.UpdateJointPositions(false);
 
@@ -483,12 +334,12 @@ public class AnimationController : MonoBehaviour
         {
             AssetDatabase.CreateAsset(clip, "Assets/AnimationClips/testclip2.anim");
             AssetDatabase.SaveAssets();
-            Debug.Log("Exported Animation Clip");
+            Debug.Log("[Animation Controller] Exported animation clip.");
         }
 #endif
         return clip;
     }
-    private void FloorAlignment2(GameObject human)
+    private void FloorAlignment(GameObject human)
     {
         GameObject rightFoot = GetChildGameObject(human, "right_foot");
         GameObject leftFoot = GetChildGameObject(human, "left_foot");
@@ -508,66 +359,7 @@ public class AnimationController : MonoBehaviour
         human.transform.position += correction;
 
     }
-    private void FloorAlignment(GameObject human)
-    {
-        GameObject rightFoot = GetChildGameObject(human, "right_foot");
-        GameObject leftFoot = GetChildGameObject(human, "left_foot");
-        Vector3 rightPos = rightFoot.transform.position;
-        Vector3 leftPos = leftFoot.transform.position;
-        Vector3 meshPos;
-        Vector3 correction;
-        if(rightPos.y < leftPos.y)
-        {
-            if (useExportedNavMesh)
-            {
-                meshPos = NavMeshHelper.ClosestPointOnMesh(rightPos);
-                if (floorY is float.NaN)
-                {
-                    floorY = meshPos.y;
-                }
-                else
-                {
-                    if (Mathf.Abs(meshPos.y - floorY) < 0.05)
-                    {
-                        floorY = meshPos.y;
-                    }
-                }
-            }
-            else
-            {
-                floorY = spatialMeshPaths[^1].transform.position.y;
-            }
-            correction = new Vector3(0, floorY - rightPos.y, 0);
-        }
-        else
-        {
-            if (useExportedNavMesh)
-            {
-                meshPos = NavMeshHelper.ClosestPointOnMesh(leftPos);
-                if (floorY is float.NaN)
-                {
-                    floorY = meshPos.y;
-                }
-                else
-                {
-                    if (Mathf.Abs(meshPos.y - floorY) < 0.05)
-                    {
-                        floorY = meshPos.y;
-                    }
-                }
-            }
-            else
-            {
-                floorY = spatialMeshPaths[^1].transform.position.y;
-
-            }
-            correction = new Vector3(0, floorY - leftPos.y, 0);
-
-
-        }
-        human.transform.position += correction; 
-
-    }
+    
     public GameObject CreateWalkPoints(ArrayWrapper wPath, GameObject parentGo)
     {
         GameObject walkingPath = new GameObject("GammaPath");
@@ -645,7 +437,7 @@ public class AnimationController : MonoBehaviour
             nAminCurves += SetCurveFilterConstants(clip, relPath, "localScale.z", scaleCurves[i][2]);
         }
         clip.wrapMode = WrapMode.Loop;
-        Debug.Log("Clip created with " + nAminCurves + " Animation Curves");
+        Debug.Log("[Animation Controller] Animation clip created with " + nAminCurves + " animation curves.");
         return clip;
     }
 
@@ -681,65 +473,10 @@ public class AnimationController : MonoBehaviour
         return null;
     }
 
-    public void SetNavMeshStartPos(GameObject setStartPosButton)
-    {
-        startPosButton = setStartPosButton;
-        bool toggled = setStartPosButton.GetComponent<Interactable>().IsToggled;
-        if (toggled)
-        {
-            if(spatialMeshGo == null)
-            {
-                BuildNavMeshOfSpatialMesh();
-            }
-            Vector3 cameraPos = Camera.main.transform.position;
-            cameraPos += new Vector3(0, -1.5f, 0);
-            Vector3 meshPos = NavMeshHelper.ClosestPointOnMesh(cameraPos);
-
-            startPos = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            startPos.name = "StartPosMarker";
-            startPos.transform.parent = animations.transform;
-            startPos.transform.position = meshPos;
-            startPos.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
-            startPos.GetComponent<Renderer>().material.color = new Color(0, 1, 0, 1);
-        }
-        else
-        {
-            Destroy(startPos);
-            startPos = null;
-        }
-
-    }
-    public void SetNavMeshEndPos(GameObject setEndPosButton)
-    {
-        endPosButton = setEndPosButton;
-        bool toggled = setEndPosButton.GetComponent<Interactable>().IsToggled;
-        if (toggled)
-        {
-            if (spatialMeshGo == null)
-            {
-                BuildNavMeshOfSpatialMesh();
-            }
-            Vector3 cameraPos = Camera.main.transform.position;
-            cameraPos += new Vector3(0, -1.5f, 0);
-
-            Vector3 meshPos = NavMeshHelper.ClosestPointOnMesh(cameraPos);
-
-            endPos = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            endPos.name = "EndPosMarker";
-            endPos.transform.parent = animations.transform;
-            endPos.transform.position = meshPos;
-            endPos.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
-            endPos.GetComponent<Renderer>().material.color = new Color(1, 0, 0, 1);
-        }
-        else
-        {
-            Destroy(endPos);
-            endPos = null;
-        }
-
-    }
+    
     public void DestroyAnimation()
     {
+        Debug.Log("[Animation Controller][GUI] Destroying animation.");
         if(humans.Count != 0)
         {
             GameObject human = humans.Last();
@@ -751,7 +488,7 @@ public class AnimationController : MonoBehaviour
                 gammaPaths.Remove(p);
                 Destroy(p);
             }
-            if (visualizeNavMeshPath)
+            if (visualizespatialMeshPath)
             {
                 GameObject p = spatialMeshPaths.Last();
                 spatialMeshPaths.Remove(p);
@@ -760,55 +497,63 @@ public class AnimationController : MonoBehaviour
         }
     }
 
+    private void ChangePathColor(GameObject path, Color color)
+    {
+        for (int i = 0; i < path.transform.childCount; i++)
+        {
+            GameObject child = path.transform.GetChild(i).gameObject;
+            child.GetComponent<Renderer>().material.color = color;
+        }
+    }
     public void SetExportedMeshVisibility(GameObject switchGo)
     {
         bool isToggled = switchGo.GetComponent<Interactable>().IsToggled;
         if (isToggled)
         {
-            if (spatialMeshGo != null)
-            {
-                spatialMeshGo.GetComponent<MeshRenderer>().enabled = true;
-            }
-            if (!useExportedNavMesh)
-            {
-                ShowSpatialMesh();
-            }
+            Debug.Log("[Animation Controller][GUI] Showing spatial mesh.");
+            ShowSpatialMesh();
         }
         else
         {
-            HideSpatialMesh();
-            if (spatialMeshGo != null)
-            {
-                spatialMeshGo.GetComponent<MeshRenderer>().enabled = false;
-            }
+            Debug.Log("[Animation Controller][GUI] Hiding spatial mesh.");
+            HideSpatialMesh();           
         }
     }
 
     public void SetPathVisibility(GameObject switchGo)
     {
-        bool isToggled = switchGo.GetComponent<Interactable>().IsToggled;
+        pathVisibilitySwitchIsToggle = switchGo.GetComponent<Interactable>().IsToggled;
 
-        if (visualizeGammaWalkingPath && isToggled)
+        if (pathVisibilitySwitchIsToggle)
+        {
+            Debug.Log("[Animation Controller][GUI] Showing paths.");
+        }
+        else
+        {
+            Debug.Log("[Animation Controller][GUI] Hiding paths.");
+        }
+
+        if (visualizeGammaWalkingPath && pathVisibilitySwitchIsToggle)
         {
             foreach(GameObject p in gammaPaths)
             {
                 p.SetActive(true);
             }
-        }else if(visualizeGammaWalkingPath && !isToggled)
+        }else if(visualizeGammaWalkingPath && !pathVisibilitySwitchIsToggle)
         {
             foreach (GameObject p in gammaPaths)
             {
                 p.SetActive(false);
             }
         }
-        if (visualizeNavMeshPath && isToggled)
+        if (visualizespatialMeshPath && pathVisibilitySwitchIsToggle)
         {
             foreach (GameObject p in spatialMeshPaths)
             {
                 p.SetActive(true);
             }
         }
-        else if (visualizeNavMeshPath && !isToggled)
+        else if (visualizespatialMeshPath && !pathVisibilitySwitchIsToggle)
         {
             foreach (GameObject p in spatialMeshPaths)
             {
@@ -817,28 +562,15 @@ public class AnimationController : MonoBehaviour
         }
     }
 
-    public void SetNavMeshMode(GameObject switchGo)
-    {
-        bool isToggled = switchGo.GetComponent<Interactable>().IsToggled;
-        if (isToggled)
-        {
-            useExportedNavMesh = true;
-            pathSetter.ResetPath(true);
-            pathSetter.enabled = false;
-        }
-        else
-        {
-            useExportedNavMesh = false;
-            pathSetter.enabled = true;
-        }
-    }
 
     public void ResetPath()
     {
+        Debug.Log("[Animation Controller][GUI] Resetting current path.");
         pathSetter.ResetPath(true);
     }
     public void EnableServerSettingsMenu()
     {
+        Debug.Log("[Animation Controller][GUI] Opening server settings.");
         pathSetter.enabled = false;
         if (meshObserver.DisplayOption == SpatialAwarenessMeshDisplayOptions.Visible)
         {
@@ -849,11 +581,12 @@ public class AnimationController : MonoBehaviour
             spatialMeshVisWasActive = false;
         }
         HideSpatialMesh();
-        serverSettings.SetActive(true);
+        serverSettingsGo.SetActive(true);
     }
     public void DisableServerSettingsMenu()
     {
-        serverSettings.SetActive(false);
+        Debug.Log("[Animation Controller][GUI] Closing server settings.");
+        serverSettingsGo.SetActive(false);
 
         pathSetter.enabled = true;
         if (spatialMeshVisWasActive)

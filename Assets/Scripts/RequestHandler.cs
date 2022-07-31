@@ -13,11 +13,10 @@ public class RequestHandler : MonoBehaviour
     {
         dialogController = GameObject.Find("DialogController").GetComponent<DialogController>();
     }
-    public void Request(string data, Action<string> responseCallback, Action failureCallback)
+    public void PostRequest(string url, string data, Action<string> responseCallback, Action failureCallback)
     {
         try
         {
-            string url = "http://217.22.132.16:8080";
             byte[] jsonToSend = new System.Text.UTF8Encoding().GetBytes(data);
             var req = new UnityWebRequest(url, "POST");
             req.uploadHandler = new UploadHandlerRaw(jsonToSend);
@@ -26,11 +25,11 @@ public class RequestHandler : MonoBehaviour
             req.disposeUploadHandlerOnDispose = true;
 
             req.SetRequestHeader("Content-Type", "application/json");
-            StartCoroutine(onResponse(req, responseCallback, failureCallback));
+            StartCoroutine(OnResponse(req, responseCallback, failureCallback));
         }
-        catch (Exception e) { Debug.Log("ERROR : " + e.Message); }
+        catch (Exception e) { Debug.Log("[RequestHandler] ERROR : " + e.Message); }
     }
-    private IEnumerator onResponse(UnityWebRequest req, Action<string> responseCallback, Action failureCallback)
+    private IEnumerator OnResponse(UnityWebRequest req, Action<string> responseCallback, Action failureCallback)
     {
 
         yield return req.SendWebRequest();
@@ -39,12 +38,12 @@ public class RequestHandler : MonoBehaviour
             string responseText = req.downloadHandler.text;
             responseText = Regex.Unescape(responseText);
             responseText = responseText.Substring(1, responseText.Length - 2);
-            Debug.Log("RequestHandler: Success, received response.");
+            Debug.Log("[RequestHandler] Success, received response.");
             responseCallback(responseText);
         }
         else
         {
-            Debug.Log("Network error has occured: " + req.GetResponseHeader(""));
+            Debug.Log("[RequestHandler] Network error has occured: " + req.GetResponseHeader(""));
             dialogController.OpenDialog("Gamma Server Request Error", req.GetResponseHeader(""));
             failureCallback();
 
@@ -55,11 +54,8 @@ public class RequestHandler : MonoBehaviour
 
     public IEnumerator GetRequest(string uri, System.Action<bool> requestResponseCallback)
     {
-        //string uri = "http://217.22.132.16:8080";
-        Debug.Log(uri);
         using (UnityWebRequest webRequest = UnityWebRequest.Get(uri))
         {
-            // Request and wait for the desired page.
             webRequest.timeout = 3;
 
             yield return webRequest.SendWebRequest();
@@ -70,11 +66,11 @@ public class RequestHandler : MonoBehaviour
             switch (webRequest.result)
             {
                 case UnityWebRequest.Result.Success:
-                    Debug.Log(pages[page] + ":\nReceived: " + webRequest.downloadHandler.text);
+                    Debug.Log("[RequestHandler] Success, received: " + webRequest.downloadHandler.text);
                     requestResponseCallback(true);
                     break;
                 default:
-                    Debug.Log(pages[page] + ": Error: " + webRequest.error);
+                    Debug.Log("[RequestHandler] Error, received: " + webRequest.error);
                     requestResponseCallback(false);
                     break;
 
