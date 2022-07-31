@@ -7,7 +7,13 @@ using UnityEngine.Networking;
 
 public class RequestHandler : MonoBehaviour
 {
-    public void Request(string data, Action<string> responseCallback)
+    public DialogController dialogController;
+
+    private void Start()
+    {
+        dialogController = GameObject.Find("DialogController").GetComponent<DialogController>();
+    }
+    public void Request(string data, Action<string> responseCallback, Action failureCallback)
     {
         try
         {
@@ -20,25 +26,27 @@ public class RequestHandler : MonoBehaviour
             req.disposeUploadHandlerOnDispose = true;
 
             req.SetRequestHeader("Content-Type", "application/json");
-            StartCoroutine(onResponse(req, responseCallback));
+            StartCoroutine(onResponse(req, responseCallback, failureCallback));
         }
         catch (Exception e) { Debug.Log("ERROR : " + e.Message); }
     }
-    private IEnumerator onResponse(UnityWebRequest req, Action<string> responseCallback)
+    private IEnumerator onResponse(UnityWebRequest req, Action<string> responseCallback, Action failureCallback)
     {
 
         yield return req.SendWebRequest();
-        if (req.result == UnityWebRequest.Result.ConnectionError)
-        {
-            Debug.Log("Network error has occured: " + req.GetResponseHeader(""));
-        }
-        else
+        if (req.result == UnityWebRequest.Result.Success)
         {
             string responseText = req.downloadHandler.text;
             responseText = Regex.Unescape(responseText);
             responseText = responseText.Substring(1, responseText.Length - 2);
             Debug.Log("RequestHandler: Success, received response.");
             responseCallback(responseText);
+        }
+        else
+        {
+            Debug.Log("Network error has occured: " + req.GetResponseHeader(""));
+            dialogController.OpenDialog("Gamma Server Request Error", req.GetResponseHeader(""));
+            failureCallback();
 
         }
         req.Dispose();

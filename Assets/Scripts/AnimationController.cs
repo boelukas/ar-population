@@ -38,6 +38,8 @@ public class AnimationController : MonoBehaviour
     private GameObject spatialMeshGo = null;
     private RequestHandler requestHandler;
     private System.Action<string> requestResponseCallback;
+    private System.Action requestFailureCallback;
+
     private IMixedRealitySpatialAwarenessMeshObserver meshObserver;
     private List<GameObject> humans;
     private List<GameObject> spatialMeshPaths;
@@ -79,6 +81,7 @@ public class AnimationController : MonoBehaviour
     {
         requestHandler = gameObject.AddComponent<RequestHandler>();
         requestResponseCallback = new System.Action<string>(ImportAnimation);
+        requestFailureCallback = new System.Action(CleanUpAfterFailedRequest);
         humans = new List<GameObject>();
         spatialMeshPaths = new List<GameObject>();
         gammaPaths = new List<GameObject>();
@@ -150,7 +153,15 @@ public class AnimationController : MonoBehaviour
 
         string jsonPath = NavMeshHelper.PathToJson(UnityPathToGamma(currentPath));
         Debug.Log("Sending request to GAMMA.");
-        requestHandler.Request(jsonPath, requestResponseCallback);
+        requestHandler.Request(jsonPath, requestResponseCallback, requestFailureCallback);
+    }
+
+    private void CleanUpAfterFailedRequest()
+    {
+        GameObject lastPath = spatialMeshPaths[^1];
+        spatialMeshPaths.Remove(lastPath);
+        Destroy(lastPath);
+        ResetPath();
     }
     private void ImportAnimation(string jsonString)
     {

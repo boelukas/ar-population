@@ -56,10 +56,6 @@ public class PathSetter : MonoBehaviour, IMixedRealityPointerHandler
                 NavMeshHelper.DrawLine(wayPoints[^2].transform.position, wayPoints[^1].transform.position, path);
             }
         }
-        else
-        {
-            Debug.Log("Hit surface with layer: " + result.CurrentPointerTarget?.layer.ToString());
-        }
     }
 
     public Vector3[] GetWayPoints()
