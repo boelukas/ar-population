@@ -581,6 +581,8 @@ public class AnimationController : MonoBehaviour
             spatialMeshVisWasActive = false;
         }
         HideSpatialMesh();
+        serverSettingsGo.transform.position = Camera.main.transform.position + Camera.main.transform.forward;
+        serverSettingsGo.transform.rotation = Quaternion.LookRotation(Camera.main.transform.forward);
         serverSettingsGo.SetActive(true);
     }
     public void DisableServerSettingsMenu()
