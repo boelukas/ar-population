@@ -22,6 +22,7 @@ public class AnimationController : MonoBehaviour
     public int minNavMeshPathLength = 3;
     public Material spatialMeshMat;
     public bool useExportedNavMesh = false;
+
     // GAMMA walking path properties
     public bool visualizeGammaWalkingPath = true;
 
@@ -29,6 +30,7 @@ public class AnimationController : MonoBehaviour
     public bool usePredefindedGammaAnswer = false;
     public TextAsset debugJsonGammaResponse;
     public bool exportAnimationClipEditorOnly = true;
+    public GameObject serverSettings;
 
     // Private members
     private GameObject sceneContent;
@@ -41,6 +43,7 @@ public class AnimationController : MonoBehaviour
     private List<GameObject> spatialMeshPaths;
     private List<GameObject> gammaPaths;
     private Vector3[] currentPath;
+    private bool spatialMeshVisWasActive;
 
     // Editing start and end position
     private GameObject startPos;
@@ -105,12 +108,6 @@ public class AnimationController : MonoBehaviour
 
     }
 
-    public void PingServer()
-    {
-        Debug.Log("Sending GET");
-        StartCoroutine(requestHandler.GetRequest());
-    }
-
     public void CreateWalkingPathAnimation()
     {
         Application.targetFrameRate = 60;
@@ -158,7 +155,6 @@ public class AnimationController : MonoBehaviour
     private void ImportAnimation(string jsonString)
     {
         Debug.Log("Importing Animation");
-
         GammaDataStructure gamma = JsonUtility.FromJson<GammaDataStructure>(jsonString);
         GameObject human;
         if (gamma.motion[0].gender == "female")
@@ -829,5 +825,29 @@ public class AnimationController : MonoBehaviour
     public void ResetPath()
     {
         pathSetter.ResetPath(true);
+    }
+    public void EnableServerSettingsMenu()
+    {
+        pathSetter.enabled = false;
+        if (meshObserver.DisplayOption == SpatialAwarenessMeshDisplayOptions.Visible)
+        {
+            spatialMeshVisWasActive = true;
+        }
+        else
+        {
+            spatialMeshVisWasActive = false;
+        }
+        HideSpatialMesh();
+        serverSettings.SetActive(true);
+    }
+    public void DisableServerSettingsMenu()
+    {
+        serverSettings.SetActive(false);
+
+        pathSetter.enabled = true;
+        if (spatialMeshVisWasActive)
+        {
+            ShowSpatialMesh();
+        }
     }
 }

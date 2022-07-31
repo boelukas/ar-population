@@ -142,3 +142,9 @@ public class WPathPosition
     public int index;
     public float[] position;
 }
+
+[Serializable]
+public class Config
+{
+    public string gammaServer;
+}
