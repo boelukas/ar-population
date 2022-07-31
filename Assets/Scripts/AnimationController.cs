@@ -1,4 +1,5 @@
 using Microsoft.MixedReality.Toolkit;
+using Microsoft.MixedReality.Toolkit.Input;
 using Microsoft.MixedReality.Toolkit.SpatialAwareness;
 using Microsoft.MixedReality.Toolkit.UI;
 using System.Collections.Generic;
@@ -20,6 +21,7 @@ public class AnimationController : MonoBehaviour
     public bool visualizeNavMeshPath = true;
     public int minNavMeshPathLength = 3;
     public Material spatialMeshMat;
+    public bool useExportedNavMesh = false;
     // GAMMA walking path properties
     public bool visualizeGammaWalkingPath = true;
 
@@ -30,6 +32,7 @@ public class AnimationController : MonoBehaviour
 
     // Private members
     private GameObject sceneContent;
+    private GameObject animations;
     private GameObject spatialMeshGo = null;
     private RequestHandler requestHandler;
     private System.Action<string> requestResponseCallback;
@@ -37,12 +40,14 @@ public class AnimationController : MonoBehaviour
     private List<GameObject> humans;
     private List<GameObject> spatialMeshPaths;
     private List<GameObject> gammaPaths;
+    private Vector3[] currentPath;
 
     // Editing start and end position
     private GameObject startPos;
     private GameObject endPos;
     private GameObject startPosButton = null;
     private GameObject endPosButton = null;
+    private PathSetter pathSetter;
 
     //Animation parameters
     private readonly int nFramesMp = 10;
@@ -65,6 +70,8 @@ public class AnimationController : MonoBehaviour
     private float floorY = float.NaN;
 
 
+
+
     void Start()
     {
         requestHandler = gameObject.AddComponent<RequestHandler>();
@@ -72,10 +79,16 @@ public class AnimationController : MonoBehaviour
         humans = new List<GameObject>();
         spatialMeshPaths = new List<GameObject>();
         gammaPaths = new List<GameObject>();
+        animations = new GameObject("animations");
+        pathSetter = gameObject.AddComponent<PathSetter>();
+        pathSetter.SetParent(animations);
 
-        sceneContent = GameObject.FindGameObjectsWithTag("SceneContent")[0];
-
-        
+        animations.transform.parent = GameObject.Find("MixedRealitySceneContent").transform;
+        if (useExportedNavMesh)
+        {
+            pathSetter.enabled = false;
+        }
+        sceneContent = GameObject.FindGameObjectsWithTag("SceneContent")[0];        
         var spatialAwarenessService = CoreServices.SpatialAwarenessSystem;
         var dataProviderAccess = spatialAwarenessService as IMixedRealityDataProviderAccess;
         var fakeMeshObserverName = "Spatial Object Mesh Observer";
@@ -101,7 +114,7 @@ public class AnimationController : MonoBehaviour
     public void CreateWalkingPathAnimation()
     {
         Application.targetFrameRate = 60;
-        if (spatialMeshGo == null)
+        if (spatialMeshGo == null && useExportedNavMesh)
         {
             BuildNavMeshOfSpatialMesh();
         }
@@ -110,21 +123,35 @@ public class AnimationController : MonoBehaviour
             ImportAnimation(debugJsonGammaResponse.text);
             return;
         }
-        NavMeshPath samplePath = new NavMeshPath();
-        bool pathFound = SampleNavMeshPath(out samplePath);
-        if (!pathFound)
+        if (useExportedNavMesh)
         {
-            return;
-        }
-        if (visualizeNavMeshPath)
-        {
-            Debug.Log("Visualizing path");
-            spatialMeshPaths.Add(NavMeshHelper.VisualizePath(samplePath, spatialMeshGo));
-            Debug.Log("Visualizing path - done");
+            NavMeshPath samplePath = new NavMeshPath();
+            bool pathFound = SampleNavMeshPath(out samplePath);
+            if (!pathFound)
+            {
+                return;
+            }
+            currentPath = samplePath.corners;
+            if (visualizeNavMeshPath)
+            {
+                Debug.Log("Visualizing path");
+                spatialMeshPaths.Add(NavMeshHelper.VisualizePath(samplePath, animations));
+                Debug.Log("Visualizing path - done");
 
+            }
         }
-        UnityPathToGamma(samplePath);
-        string jsonPath = NavMeshHelper.PathToJson(samplePath);
+        else
+        {
+            currentPath = pathSetter.GetWayPoints();
+            spatialMeshPaths.Add(pathSetter.path);
+            if (currentPath.Length < 2)
+            {
+                return;
+            }
+            pathSetter.ResetPath(!visualizeNavMeshPath);
+        }
+
+        string jsonPath = NavMeshHelper.PathToJson(UnityPathToGamma(currentPath));
         Debug.Log("Sending request to GAMMA.");
         requestHandler.Request(jsonPath, requestResponseCallback);
     }
@@ -136,16 +163,16 @@ public class AnimationController : MonoBehaviour
         GameObject human;
         if (gamma.motion[0].gender == "female")
         {
-            human = Instantiate(smplxFemale, spatialMeshGo.transform);
+            human = Instantiate(smplxFemale, animations.transform);
         }
         else
         {
-            human = Instantiate(smplxMale, spatialMeshGo.transform);
+            human = Instantiate(smplxMale, animations.transform);
         }
         if (visualizeGammaWalkingPath)
         {
             Debug.Log("Visualizing walking path");
-            gammaPaths.Add(CreateWalkPoints(gamma.wpath, spatialMeshGo));
+            gammaPaths.Add(CreateWalkPoints(gamma.wpath, animations));
             Debug.Log("Visualizing walking path - done");
 
         }
@@ -194,7 +221,7 @@ public class AnimationController : MonoBehaviour
             i++;
         }
         spatialMeshGo = new GameObject("SpatialMesh");
-        spatialMeshGo.transform.parent = sceneContent.transform;
+        spatialMeshGo.transform.parent = animations.transform;
         spatialMeshGo.AddComponent<MeshFilter>();
         spatialMeshGo.AddComponent<MeshRenderer>();
         spatialMeshGo.GetComponent<MeshRenderer>().material = spatialMeshMat;
@@ -208,19 +235,28 @@ public class AnimationController : MonoBehaviour
         spatialMeshGo.GetComponent<NavMeshSurface>().BuildNavMesh();
 
         // Deactivate spatial mesh
-        if (Application.isEditor)
-        {
-            observer.DisplayOption = SpatialAwarenessMeshDisplayOptions.None;
-        }
-        else
-        {
-            observer.DisplayOption = SpatialAwarenessMeshDisplayOptions.Occlusion;
-        }
+        HideSpatialMesh();
 
         Debug.Log("Building Navigation Mesh - done");
 
     }
+    private void HideSpatialMesh()
+    {
+        if (Application.isEditor)
+        {
+            meshObserver.DisplayOption = SpatialAwarenessMeshDisplayOptions.None;
+        }
+        else
+        {
+            meshObserver.DisplayOption = SpatialAwarenessMeshDisplayOptions.Occlusion;
+        }
+    }
 
+    private void ShowSpatialMesh()
+    {
+        meshObserver.DisplayOption = SpatialAwarenessMeshDisplayOptions.Visible;
+
+    }
     private bool SampleNavMeshPath(out NavMeshPath path)
     {
         Debug.Log("Sample path.");
@@ -426,7 +462,7 @@ public class AnimationController : MonoBehaviour
                 Quaternion finalRot = CoordinateHelper.QuaternionFromMatrix(CoordinateHelper.ToUnity(transfRotmat * globalOrientMatrix));
                 human.transform.rotation = finalRot;
 
-                FloorAlignment(human);
+                FloorAlignment2(human);
                 //smplx.UpdatePoseCorrectives();
                 //smplx.UpdateJointPositions(false);
 
@@ -445,6 +481,26 @@ public class AnimationController : MonoBehaviour
 #endif
         return clip;
     }
+    private void FloorAlignment2(GameObject human)
+    {
+        GameObject rightFoot = GetChildGameObject(human, "right_foot");
+        GameObject leftFoot = GetChildGameObject(human, "left_foot");
+        Vector3 rightPos = rightFoot.transform.position;
+        Vector3 leftPos = leftFoot.transform.position;
+        Vector3 correction; 
+        floorY = currentPath[0].y;
+
+        if (rightPos.y < leftPos.y)
+        {
+            correction = new Vector3(0, floorY - rightPos.y, 0);
+        }
+        else
+        {
+            correction = new Vector3(0, floorY - leftPos.y, 0);
+        }
+        human.transform.position += correction;
+
+    }
     private void FloorAlignment(GameObject human)
     {
         GameObject rightFoot = GetChildGameObject(human, "right_foot");
@@ -455,35 +511,51 @@ public class AnimationController : MonoBehaviour
         Vector3 correction;
         if(rightPos.y < leftPos.y)
         {
-            meshPos = NavMeshHelper.ClosestPointOnMesh(rightPos);
-            if(floorY is float.NaN)
+            if (useExportedNavMesh)
             {
-                floorY = meshPos.y;
-            }
-            else
-            {
-                if (Mathf.Abs(meshPos.y - floorY) < 0.05)
+                meshPos = NavMeshHelper.ClosestPointOnMesh(rightPos);
+                if (floorY is float.NaN)
                 {
                     floorY = meshPos.y;
                 }
+                else
+                {
+                    if (Mathf.Abs(meshPos.y - floorY) < 0.05)
+                    {
+                        floorY = meshPos.y;
+                    }
+                }
+            }
+            else
+            {
+                floorY = spatialMeshPaths[^1].transform.position.y;
             }
             correction = new Vector3(0, floorY - rightPos.y, 0);
         }
         else
         {
-            meshPos = NavMeshHelper.ClosestPointOnMesh(leftPos);
-            if (floorY is float.NaN)
+            if (useExportedNavMesh)
             {
-                floorY = meshPos.y;
-            }
-            else
-            {
-                if (Mathf.Abs(meshPos.y - floorY) < 0.05)
+                meshPos = NavMeshHelper.ClosestPointOnMesh(leftPos);
+                if (floorY is float.NaN)
                 {
                     floorY = meshPos.y;
                 }
+                else
+                {
+                    if (Mathf.Abs(meshPos.y - floorY) < 0.05)
+                    {
+                        floorY = meshPos.y;
+                    }
+                }
+            }
+            else
+            {
+                floorY = spatialMeshPaths[^1].transform.position.y;
+
             }
             correction = new Vector3(0, floorY - leftPos.y, 0);
+
 
         }
         human.transform.position += correction; 
@@ -491,7 +563,7 @@ public class AnimationController : MonoBehaviour
     }
     public GameObject CreateWalkPoints(ArrayWrapper wPath, GameObject parentGo)
     {
-        GameObject walkingPath = new GameObject("Path");
+        GameObject walkingPath = new GameObject("GammaPath");
         walkingPath.transform.parent = parentGo.transform;
         GameObject[] walkPoints = new GameObject[wPath.shape[0]];
         for (int i = 0; i < wPath.shape[0]; i++)
@@ -585,12 +657,14 @@ public class AnimationController : MonoBehaviour
             return 0;
         }
     }
-    private void UnityPathToGamma(NavMeshPath path)
+    private Vector3[] UnityPathToGamma(Vector3[] pathCorners)
     {
-        for (int i = 0; i < path.corners.Length; i++)
+        Vector3[] res = new Vector3[pathCorners.Length];
+        for (int i = 0; i < pathCorners.Length; i++)
         {
-            path.corners[i] = CoordinateHelper.ToGamma(path.corners[i]);
+            res[i] = CoordinateHelper.ToGamma(pathCorners[i]);
         }
+        return res;
     }
     private GameObject GetChildGameObject(GameObject fromGameObject, string withName)
     {
@@ -616,7 +690,7 @@ public class AnimationController : MonoBehaviour
 
             startPos = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             startPos.name = "StartPosMarker";
-            startPos.transform.parent = spatialMeshGo.transform;
+            startPos.transform.parent = animations.transform;
             startPos.transform.position = meshPos;
             startPos.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
             startPos.GetComponent<Renderer>().material.color = new Color(0, 1, 0, 1);
@@ -645,7 +719,7 @@ public class AnimationController : MonoBehaviour
 
             endPos = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             endPos.name = "EndPosMarker";
-            endPos.transform.parent = spatialMeshGo.transform;
+            endPos.transform.parent = animations.transform;
             endPos.transform.position = meshPos;
             endPos.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
             endPos.GetComponent<Renderer>().material.color = new Color(1, 0, 0, 1);
@@ -688,9 +762,14 @@ public class AnimationController : MonoBehaviour
             {
                 spatialMeshGo.GetComponent<MeshRenderer>().enabled = true;
             }
+            if (!useExportedNavMesh)
+            {
+                ShowSpatialMesh();
+            }
         }
         else
         {
+            HideSpatialMesh();
             if (spatialMeshGo != null)
             {
                 spatialMeshGo.GetComponent<MeshRenderer>().enabled = false;
@@ -729,5 +808,26 @@ public class AnimationController : MonoBehaviour
                 p.SetActive(false);
             }
         }
+    }
+
+    public void SetNavMeshMode(GameObject switchGo)
+    {
+        bool isToggled = switchGo.GetComponent<Interactable>().IsToggled;
+        if (isToggled)
+        {
+            useExportedNavMesh = true;
+            pathSetter.ResetPath(true);
+            pathSetter.enabled = false;
+        }
+        else
+        {
+            useExportedNavMesh = false;
+            pathSetter.enabled = true;
+        }
+    }
+
+    public void ResetPath()
+    {
+        pathSetter.ResetPath(true);
     }
 }

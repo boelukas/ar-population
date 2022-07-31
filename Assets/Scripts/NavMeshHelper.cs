@@ -79,7 +79,7 @@ public class NavMeshHelper : MonoBehaviour
 
     public static GameObject VisualizePath(NavMeshPath path, GameObject parentGo)
     {
-        GameObject pathObject = new GameObject("Path");
+        GameObject pathObject = new GameObject("NavMeshPath");
         pathObject.transform.parent = parentGo.transform;
         Vector3[] corners = path.corners;
         int numCorners = corners.Length;
@@ -124,24 +124,24 @@ public class NavMeshHelper : MonoBehaviour
 
     public static void ExportPath(NavMeshPath path, string exportDir, string pathName)
     {
-        File.WriteAllText(Path.Combine(exportDir, pathName), PathToJson(path));
+        File.WriteAllText(Path.Combine(exportDir, pathName), PathToJson(path.corners));
     }
 
-    public static string PathToJson(NavMeshPath path)
+    public static string PathToJson(Vector3[] pathCorners)
     {
-        float[] points = new float[path.corners.Length * 3];
+        float[] points = new float[pathCorners.Length * 3];
         int j = 0;
-        for (int i = 0; i < path.corners.Length * 3; i += 3)
+        for (int i = 0; i < pathCorners.Length * 3; i += 3)
         {
-            points[i] = path.corners[j].x;
-            points[i + 1] = path.corners[j].y;
-            points[i + 2] = path.corners[j].z;
+            points[i] = pathCorners[j].x;
+            points[i + 1] = pathCorners[j].y;
+            points[i + 2] = pathCorners[j].z;
             j++;
 
         }
         return "[" + string.Join(", ", points) + "]";
     }
-    private static void DrawLine(Vector3 start, Vector3 end, GameObject parentGo)
+    public static void DrawLine(Vector3 start, Vector3 end, GameObject parentGo)
     {
         GameObject line = new GameObject("PathConnection");
         line.transform.parent = parentGo.transform;
