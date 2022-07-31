@@ -26,7 +26,6 @@ public class ServerSettings : MonoBehaviour
     }
     private void OnEnable()
     {
-        Debug.Log("Persistent Data path: "+Application.persistentDataPath);
         ReadConfig();
         var inputFildScript = inputField.GetComponent<MRTKTMPInputField>();
         inputFildScript.text = config.gammaServer;
