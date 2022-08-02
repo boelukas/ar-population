@@ -1,0 +1,1 @@
+Please see Assets\SMPLX\LICENSE.md
