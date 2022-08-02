@@ -141,7 +141,7 @@ public class AnimationController : MonoBehaviour
         Debug.Log("[Animation Controller] Sending request to GAMMA.");
         serverSettings.ReadConfigFile();
         isWaitingForGammaResponse = true;
-        ChangePathColor(spatialMeshPaths[^1], Color.yellow);
+        ChangePathColor(spatialMeshPaths[^1], Color.blue);
         requestHandler.PostRequest(serverSettings.config.gammaServer, jsonPath, requestResponseCallback, requestFailureCallback);
     }
 
