@@ -24,7 +24,6 @@ With the destroy animation button the last generated animation is destroyed. The
     - Universal Windows Platform (UWP) development
     - Game development with Unity
     - C++ (v143) Universal Windows Platform tools for UWP
-- [Gamma](https://github.com/yz-cnsdqz/GAMMA-release)
 - Blender 2.93.9 (Optional)
 
 ### Setup
