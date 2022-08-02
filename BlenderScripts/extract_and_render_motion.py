@@ -1,9 +1,9 @@
 # Global Settings
 TRAJ_EXPORT = False
 TRAJ_EXPORT_PATH = 'C:\\Users\\Lukas\\Projects\\ar-population\\Data\\PathTrajectories'
-GAMMA_RESULTS_PATH = 'C:\\Users\\Lukas\\Projects\\ar-population\\Data\\GammaResults\\MPVAEPolicy_v0\\*.pkl'
+GAMMA_RESULTS_PATH = 'C:\\Users\\Lukas\\Projects\\GAMMA-server\\GammaResults\\*.pkl'
 
-N_TRAJECTORIES = 2
+N_TRAJECTORIES = 1
 
 import bpy
 import bmesh
@@ -374,7 +374,7 @@ def animate_smplx(filepath):
         frame = animate_smplx_one_primitive(armature, scene, data, frame)
 
     print('|-- poses and keyframes updated...')
-    scene.frame_end = frame+10
+#    scene.frame_end = frame+10
 
 
 import glob

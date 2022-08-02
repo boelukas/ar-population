@@ -3810,6 +3810,7 @@ MonoBehaviour:
   visualizespatialMeshPath: 1
   spatialMeshMat: {fileID: 2100000, guid: 5a74c8b3858e9eb4f988ad14073b2f9f, type: 2}
   visualizeGammaWalkingPath: 1
+  pathVisibilitySwitchIsToggle: 1
   usePredefindedGammaAnswer: 0
   debugJsonGammaResponse: {fileID: 4900000, guid: ee5b779baea03144ebf93883dfe313da, type: 3}
   exportAnimationClipEditorOnly: 1
