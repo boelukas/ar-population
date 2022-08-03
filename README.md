@@ -1,6 +1,8 @@
 # AR Population
 Visualization of [GAMMA: The Wanderings of Odysseus in 3D Scenes](https://yz-cnsdqz.github.io/eigenmotion/GAMMA/) in AR on the hololens 2.
 
+![](https://github.com/boelukas/ar-population/blob/main/demo.gif)
+
 ## Installation
 The latest build can be found here: https://polybox.ethz.ch/index.php/s/KU0BVeec2ToCxlq.
 To install, copy the build to the hololens with a USB stick or over the device portal.
