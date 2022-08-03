@@ -52,16 +52,23 @@ public class RequestHandler : MonoBehaviour
     }
 
 
-    public IEnumerator GetRequest(string uri, System.Action<bool> requestResponseCallback)
+    public IEnumerator GetRequest(string address, System.Action<bool> requestResponseCallback)
     {
+        Uri uri = null;
+        try
+        {
+            uri = new Uri(address);
+        }
+        catch (UriFormatException)
+        {
+            requestResponseCallback(false);
+            yield break;
+        }
         using (UnityWebRequest webRequest = UnityWebRequest.Get(uri))
         {
             webRequest.timeout = 3;
 
             yield return webRequest.SendWebRequest();
-      
-            string[] pages = uri.Split('/');
-            int page = pages.Length - 1;
 
             switch (webRequest.result)
             {

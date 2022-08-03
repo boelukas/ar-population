@@ -37,7 +37,7 @@ public class AnimationController : MonoBehaviour
 
     // UX
     public DialogController dialogController;
-
+    public ConfigController configController;
 
     // Private members
     private GameObject animations;
@@ -92,7 +92,8 @@ public class AnimationController : MonoBehaviour
         dialogController = GameObject.Find("DialogController").GetComponent<DialogController>();
         serverSettings = serverSettingsGo.GetComponent<ServerSettings>();
         animations.transform.parent = GameObject.Find("MixedRealitySceneContent").transform;
-       
+        configController = GameObject.Find("ConfigController").GetComponent<ConfigController>();
+
         var spatialAwarenessService = CoreServices.SpatialAwarenessSystem;
         var dataProviderAccess = spatialAwarenessService as IMixedRealityDataProviderAccess;
         var fakeMeshObserverName = "Spatial Object Mesh Observer";
@@ -105,6 +106,7 @@ public class AnimationController : MonoBehaviour
         {
             meshObserver = dataProviderAccess.GetDataProvider<IMixedRealitySpatialAwarenessMeshObserver>(hololensMeshObserverName);
         }
+        ShowSpatialMesh();
 
 
     }
@@ -139,10 +141,10 @@ public class AnimationController : MonoBehaviour
         
         string jsonPath = PathToJson(UnityPathToGamma(currentPath));
         Debug.Log("[Animation Controller] Sending request to GAMMA.");
-        serverSettings.ReadConfigFile();
+        configController.ReadConfigFile();
         isWaitingForGammaResponse = true;
         ChangePathColor(spatialMeshPaths[^1], Color.blue);
-        requestHandler.PostRequest(serverSettings.config.gammaServer, jsonPath, requestResponseCallback, requestFailureCallback);
+        requestHandler.PostRequest(configController.config.gammaServer, jsonPath, requestResponseCallback, requestFailureCallback);
     }
 
     public static string PathToJson(Vector3[] pathCorners)
@@ -231,6 +233,10 @@ public class AnimationController : MonoBehaviour
 
     private void ShowSpatialMesh()
     {
+        configController.ReadConfigFile();
+        float extent = configController.config.spatialMeshObervationExtent;
+        meshObserver.ObservationExtents = new Vector3(extent, extent, extent);
+        meshObserver.UpdateInterval = configController.config.spatialMeshUpdateInterval;
         meshObserver.DisplayOption = SpatialAwarenessMeshDisplayOptions.Visible;
 
     }

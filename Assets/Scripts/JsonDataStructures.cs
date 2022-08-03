@@ -147,4 +147,6 @@ public class WPathPosition
 public class Config
 {
     public string gammaServer;
+    public float spatialMeshObervationExtent;
+    public float spatialMeshUpdateInterval;
 }
