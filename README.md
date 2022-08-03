@@ -16,7 +16,7 @@ Start the app and open the hand menu by turning the palm of your hand upwards. P
 Close the menu and watch around. The white lines visualize the spatial mesh. Air tap on the floor to create a way point, which will be visible as a green sphere. Air tap on a different part of the floor to create a second waypoint. Now a path was created. This path can be extended by any amount of way points. Now open the menu and click create animation. The path will turn blue, which indicates that the application is waiting for a response form the gamma server. This can take up to 30 seconds. Afterwards an animation is generated and played. A different path can be created in the same way. 
 
 With the destroy animation button the last generated animation is destroyed. The reset path button resets the current path if clicked at a wrong position. With the two switches, the spatial mesh visualization and the paths can be enabled and disabled.
-## Project Build instructions
+## Project Build Instructions
 ### Requirements
 - Windows OS (Tested with Windows 11)
 - Unity 2021.3.4f1
