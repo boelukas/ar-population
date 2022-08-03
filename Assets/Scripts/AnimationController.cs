@@ -2,7 +2,10 @@ using Microsoft.MixedReality.Toolkit;
 using Microsoft.MixedReality.Toolkit.Input;
 using Microsoft.MixedReality.Toolkit.SpatialAwareness;
 using Microsoft.MixedReality.Toolkit.UI;
+using Microsoft.MixedReality.WorldLocking.Core;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -51,6 +54,8 @@ public class AnimationController : MonoBehaviour
     private List<GameObject> gammaPaths;
     private Vector3[] currentPath;
     private bool spatialMeshVisWasActive;
+    private bool loadedSavedAnimations = false;
+    private PersistanceController persistanceController;
 
     // Path Setter
     private PathSetter pathSetter;
@@ -81,7 +86,7 @@ public class AnimationController : MonoBehaviour
     void Start()
     {
         requestHandler = gameObject.AddComponent<RequestHandler>();
-        requestResponseCallback = new System.Action<string>(ImportAnimation);
+        requestResponseCallback = new System.Action<string>(GammaSuccessCallback);
         requestFailureCallback = new System.Action(CleanUpAfterFailedRequest);
         humans = new List<GameObject>();
         spatialMeshPaths = new List<GameObject>();
@@ -93,6 +98,7 @@ public class AnimationController : MonoBehaviour
         serverSettings = serverSettingsGo.GetComponent<ServerSettings>();
         animations.transform.parent = GameObject.Find("MixedRealitySceneContent").transform;
         configController = GameObject.Find("ConfigController").GetComponent<ConfigController>();
+        persistanceController = PersistanceController.GetInstance();
 
         var spatialAwarenessService = CoreServices.SpatialAwarenessSystem;
         var dataProviderAccess = spatialAwarenessService as IMixedRealityDataProviderAccess;
@@ -107,8 +113,15 @@ public class AnimationController : MonoBehaviour
             meshObserver = dataProviderAccess.GetDataProvider<IMixedRealitySpatialAwarenessMeshObserver>(hololensMeshObserverName);
         }
         ShowSpatialMesh();
+    }
 
-
+    void Update()
+    {
+        if (!loadedSavedAnimations && persistanceController.HasValidWltFragmentId())
+        {
+            LoadSavedAnimations();
+            loadedSavedAnimations = true;
+        }
     }
 
     public void CreateWalkingPathAnimation()
@@ -118,7 +131,8 @@ public class AnimationController : MonoBehaviour
         if (usePredefindedGammaAnswer)
         {
             Debug.Log("[Animation Controller] Using predefinded debug Gamma response.");
-            ImportAnimation(debugJsonGammaResponse.text);
+            GammaDataStructure gamma = JsonUtility.FromJson<GammaDataStructure>(debugJsonGammaResponse.text);
+            ImportAnimation(gamma);
             return;
         }
 
@@ -129,6 +143,7 @@ public class AnimationController : MonoBehaviour
             return;
         }
         currentPath = pathSetter.GetWayPoints();
+        floorY = currentPath[0].y;
         spatialMeshPaths.Add(pathSetter.path);
 
         if (currentPath.Length < 2)
@@ -147,6 +162,13 @@ public class AnimationController : MonoBehaviour
         requestHandler.PostRequest(configController.config.gammaServer, jsonPath, requestResponseCallback, requestFailureCallback);
     }
 
+    private void GammaSuccessCallback(string jsonString)
+    {
+        GammaDataStructure gamma = JsonUtility.FromJson<GammaDataStructure>(jsonString);
+        SaveAnimation(gamma);
+        ImportAnimation(gamma);
+
+    }
     public static string PathToJson(Vector3[] pathCorners)
     {
         float[] points = new float[pathCorners.Length * 3];
@@ -169,10 +191,11 @@ public class AnimationController : MonoBehaviour
         ResetPath();
         isWaitingForGammaResponse=false;
     }
-    private void ImportAnimation(string jsonString)
+
+    private void ImportAnimation(GammaDataStructure gamma)
     {
         Debug.Log("[Animation Controller] Importing Animation.");
-        GammaDataStructure gamma = JsonUtility.FromJson<GammaDataStructure>(jsonString);
+
         GameObject human;
         if (gamma.motion[0].gender == "female")
         {
@@ -353,7 +376,6 @@ public class AnimationController : MonoBehaviour
         Vector3 rightPos = rightFoot.transform.position;
         Vector3 leftPos = leftFoot.transform.position;
         Vector3 correction; 
-        floorY = currentPath[0].y;
 
         if (rightPos.y < leftPos.y)
         {
@@ -486,6 +508,7 @@ public class AnimationController : MonoBehaviour
         Debug.Log("[Animation Controller][GUI] Destroying animation.");
         if(humans.Count != 0)
         {
+            int id = humans.Count - 1;
             GameObject human = humans.Last();
             humans.Remove(human);
             Destroy(human);
@@ -501,6 +524,8 @@ public class AnimationController : MonoBehaviour
                 spatialMeshPaths.Remove(p);
                 Destroy(p);
             }
+            persistanceController.DeleteAnimation(id);
+
         }
     }
 
@@ -602,5 +627,52 @@ public class AnimationController : MonoBehaviour
         {
             ShowSpatialMesh();
         }
+    }
+
+    public void SaveAnimation(GammaDataStructure gamma)
+    {
+        string path = Path.Combine(Application.persistentDataPath, "animations", "1", "test_anim");
+        ArrayWrapper p = new ArrayWrapper();
+
+        float[] data = new float[currentPath.Length * 3];
+        int idx = 0;
+        for(int i = 0; i < currentPath.Length; i++)
+        {
+            data[idx] = currentPath[i].x;
+            data[idx + 1] = currentPath[i].y;
+            data[idx + 2] = currentPath[i].z;
+            idx += 3;
+        }
+        p.shape = new int[] { currentPath.Length, 3 };
+        p.data = data;
+        gamma.spatial_mesh_path = p;
+        persistanceController.StoreAnimation(gamma);
+    }
+    public void LoadSavedAnimations()
+    {
+        string[] savedAnimations = persistanceController.LoadAnimations();
+        for(int i = 0; i < savedAnimations.Length; i++)
+        {
+            GammaDataStructure gamma = JsonUtility.FromJson<GammaDataStructure>(savedAnimations[i]);
+            Vector3[] spatialMeshPath = new Vector3[gamma.spatial_mesh_path.shape[0]];
+            for (int j = 0; j < spatialMeshPath.Length; j++)
+            {
+                if(j == 0)
+                {
+                    floorY = gamma.spatial_mesh_path.Get(j, 1);
+                }
+
+                spatialMeshPath[j] = new Vector3(gamma.spatial_mesh_path.Get(j, 0), gamma.spatial_mesh_path.Get(j, 1), gamma.spatial_mesh_path.Get(j, 2));
+            }
+            spatialMeshPaths.Add(pathSetter.VisualizePath(spatialMeshPath, animations));
+
+            ImportAnimation(gamma);
+        }
+       
+    }
+    public void CloseApp()
+    {
+        Debug.Log("Quitting App");
+        Application.Quit();
     }
 }

@@ -50,7 +50,7 @@ public class PathSetter : MonoBehaviour, IMixedRealityPointerHandler
             wayPoints.Add(cornerSphere);
             if(wayPoints.Count > 1)
             {
-                DrawLine(wayPoints[^2].transform.position, wayPoints[^1].transform.position, path);
+                DrawLine(wayPoints[^2].transform.position, wayPoints[^1].transform.position, Color.green, path);
             }
         }
     }
@@ -65,6 +65,7 @@ public class PathSetter : MonoBehaviour, IMixedRealityPointerHandler
         }
         return positions;
     }
+
     public void ResetPath(bool destroyPath)
     {
         if(destroyPath)
@@ -77,7 +78,7 @@ public class PathSetter : MonoBehaviour, IMixedRealityPointerHandler
     {
         parentGo = p;
     }
-    public static void DrawLine(Vector3 start, Vector3 end, GameObject parentGo)
+    public static void DrawLine(Vector3 start, Vector3 end, Color color, GameObject parentGo)
     {
         GameObject line = new GameObject("PathConnection");
         line.transform.parent = parentGo.transform;
@@ -88,8 +89,28 @@ public class PathSetter : MonoBehaviour, IMixedRealityPointerHandler
         lineRenderer.endWidth = 0.01f;
         lineRenderer.SetPosition(0, start);
         lineRenderer.SetPosition(1, end);
-        line.GetComponent<Renderer>().material.color = Color.green;
+        line.GetComponent<Renderer>().material.color = color;
 
+    }
+
+    public GameObject VisualizePath(Vector3[] path, GameObject parentGo)
+    {
+        GameObject importedPath = new GameObject("SpatialMeshPath");
+        importedPath.transform.parent = parentGo.transform;
+
+        for (int i = 0; i < path.Length; i++)
+        {
+            GameObject cornerSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            cornerSphere.transform.parent = importedPath.transform;
+            cornerSphere.transform.position = path[i];
+            cornerSphere.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+            cornerSphere.GetComponent<Renderer>().material.color = Color.blue;
+            if (i > 0)
+            {
+                DrawLine(path[i - 1], path[i], Color.blue, importedPath);
+            }
+        }
+        return importedPath;
     }
 
     public void OnPointerDown(MixedRealityPointerEventData eventData)

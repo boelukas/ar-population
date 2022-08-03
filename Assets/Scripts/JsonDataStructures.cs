@@ -115,25 +115,26 @@ public class GammaDataStructure
 {
     public Motion[] motion;
     public ArrayWrapper wpath;
+    public ArrayWrapper spatial_mesh_path;
 
 }
 
 [Serializable]
 public class Motion
 {
-    public string gender;
-    public ArrayWrapper betas;
-    public ArrayWrapper transf_rotmat;
-    public ArrayWrapper transf_transl;
-    public string mp_type;
-    public ArrayWrapper markers;
-    public ArrayWrapper markers_proj;
-    public ArrayWrapper pelvis_loc;
-    public ArrayWrapper joints;
-    public ArrayWrapper smplx_params;
-    public ArrayWrapper mp_latent;
-    public int timestamp;
-    public WPathPosition curr_target_wpath;
+    public string gender; 
+    public ArrayWrapper betas; // Ignored
+    public ArrayWrapper transf_rotmat; 
+    public ArrayWrapper transf_transl; 
+    public string mp_type; 
+    public ArrayWrapper markers; // Ignored
+    public ArrayWrapper markers_proj; // Ignored
+    public ArrayWrapper pelvis_loc; 
+    public ArrayWrapper joints; // Ignored
+    public ArrayWrapper smplx_params; 
+    public ArrayWrapper mp_latent; // Ignored 
+    public int timestamp;// Ignored 
+    public WPathPosition curr_target_wpath;// Ignored
 
 }
 [Serializable]

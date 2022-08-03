@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: MyMixedRealityDiagnosticsProfile
   m_EditorClassIdentifier: 
   isCustomProfile: 1
-  showDiagnostics: 0
+  showDiagnostics: 1
   showProfiler: 1
   showFrameInfo: 1
   showMemoryStats: 1
