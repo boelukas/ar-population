@@ -4,7 +4,8 @@ Visualization of [GAMMA: The Wanderings of Odysseus in 3D Scenes](https://yz-cns
 ![](https://github.com/boelukas/ar-population/blob/main/demo.gif)
 
 ## Installation
-The latest build can be found here: https://polybox.ethz.ch/index.php/s/KU0BVeec2ToCxlq.
+The latest build together with demo videos can be found here: https://polybox.ethz.ch/index.php/s/KU0BVeec2ToCxlq.
+
 To install, copy the build to the hololens with a USB stick or over the device portal.
 On the holelens open the bundle with the App Installer.
 
