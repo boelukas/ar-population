@@ -47,6 +47,7 @@ public class AnimationController : MonoBehaviour
     private RequestHandler requestHandler;
     private System.Action<string> requestResponseCallback;
     private System.Action requestFailureCallback;
+    private System.Action<DialogResult> destroyAllAnimationsDialogCallback;
 
     private IMixedRealitySpatialAwarenessMeshObserver meshObserver;
     private List<GameObject> humans;
@@ -88,6 +89,7 @@ public class AnimationController : MonoBehaviour
         requestHandler = gameObject.AddComponent<RequestHandler>();
         requestResponseCallback = new System.Action<string>(GammaSuccessCallback);
         requestFailureCallback = new System.Action(CleanUpAfterFailedRequest);
+        destroyAllAnimationsDialogCallback = new System.Action<DialogResult>(DestroyAllAnimationsDialogCallback);
         humans = new List<GameObject>();
         spatialMeshPaths = new List<GameObject>();
         gammaPaths = new List<GameObject>();
@@ -529,6 +531,24 @@ public class AnimationController : MonoBehaviour
         }
     }
 
+    public void DestroyAllAnimations()
+    {
+        Debug.Log("[Animation Controller][GUI] Destroying all animations.");
+
+        dialogController.OpenConfirmDialog("Warning", "Do you want to destroy all current animations?", destroyAllAnimationsDialogCallback);
+    }
+    private void DestroyAllAnimationsDialogCallback(DialogResult dialog)
+    {
+        if (dialog.Result == DialogButtonType.Yes)
+        {
+            int humansCount = humans.Count;
+            for (int i = 0; i < humansCount; i++)
+            {
+                DestroyAnimation();
+            }
+        }
+    }
+
     private void ChangePathColor(GameObject path, Color color)
     {
         for (int i = 0; i < path.transform.childCount; i++)
@@ -599,6 +619,12 @@ public class AnimationController : MonoBehaviour
     {
         Debug.Log("[Animation Controller][GUI] Resetting current path.");
         pathSetter.ResetPath(true);
+    }
+    public void RemoveLastWaypoint()
+    {
+        Debug.Log("[Animation Controller][GUI] Removing last waypoint");
+        pathSetter.RemoveLastWaypoint();
+
     }
     public void EnableServerSettingsMenu()
     {

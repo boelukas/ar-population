@@ -1,12 +1,14 @@
 using Microsoft.MixedReality.Toolkit;
 using Microsoft.MixedReality.Toolkit.Input;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class PathSetter : MonoBehaviour, IMixedRealityPointerHandler
 {
     public GameObject path;
     public List<GameObject> wayPoints;
+    public List<GameObject> connectionLines;
     private GameObject parentGo;
     private void OnEnable()
     {
@@ -20,6 +22,7 @@ public class PathSetter : MonoBehaviour, IMixedRealityPointerHandler
     void Start()
     {
         wayPoints = new List<GameObject>();
+        connectionLines = new List<GameObject>();
         initPath();
     }
     private void initPath()
@@ -50,7 +53,8 @@ public class PathSetter : MonoBehaviour, IMixedRealityPointerHandler
             wayPoints.Add(cornerSphere);
             if(wayPoints.Count > 1)
             {
-                DrawLine(wayPoints[^2].transform.position, wayPoints[^1].transform.position, Color.green, path);
+                GameObject line = DrawLine(wayPoints[^2].transform.position, wayPoints[^1].transform.position, Color.green, path);
+                connectionLines.Add(line);
             }
         }
     }
@@ -72,13 +76,30 @@ public class PathSetter : MonoBehaviour, IMixedRealityPointerHandler
             Destroy(path);
         initPath();
         wayPoints = new List<GameObject>();
+        connectionLines = new List<GameObject>();
+    }
+
+    public void RemoveLastWaypoint()
+    {
+        if(wayPoints.Count > 0)
+        {
+            GameObject waypoint = wayPoints.Last();
+            wayPoints.Remove(waypoint);
+            Destroy(waypoint);
+            if(connectionLines.Count > 0)
+            {
+                GameObject line = connectionLines.Last();
+                connectionLines.Remove(line);
+                Destroy(line);
+            }
+        }
     }
 
     public void SetParent(GameObject p)
     {
         parentGo = p;
     }
-    public static void DrawLine(Vector3 start, Vector3 end, Color color, GameObject parentGo)
+    public static GameObject DrawLine(Vector3 start, Vector3 end, Color color, GameObject parentGo)
     {
         GameObject line = new GameObject("PathConnection");
         line.transform.parent = parentGo.transform;
@@ -90,6 +111,7 @@ public class PathSetter : MonoBehaviour, IMixedRealityPointerHandler
         lineRenderer.SetPosition(0, start);
         lineRenderer.SetPosition(1, end);
         line.GetComponent<Renderer>().material.color = color;
+        return line;
 
     }
 

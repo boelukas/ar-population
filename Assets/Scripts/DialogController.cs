@@ -10,4 +10,9 @@ public class DialogController : MonoBehaviour
     {
         Dialog.Open(dialogPrefag, DialogButtonType.OK, title, message, false);
     }
+    public void OpenConfirmDialog(string title, string message, System.Action<DialogResult> callback)
+    {
+        Dialog d = Dialog.Open(dialogPrefag, DialogButtonType.Yes | DialogButtonType.No, title, message, true);
+        d.OnClosed += callback;
+    }
 }
