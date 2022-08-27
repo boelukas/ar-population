@@ -4406,8 +4406,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1887bd7db5a12243a02373180a62248, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  smplxFemale: {fileID: 813402265414023461, guid: 8bb52d8fb2e90cd4e874d9a44f2b221f, type: 3}
-  smplxMale: {fileID: 5568697286347022951, guid: dc0ebcd35c98fe24fad61ed3ccbe29f9, type: 3}
+  smplxFemale: {fileID: 948408233307263299, guid: 33d9677734100a34197dc51cebb8b1bc, type: 3}
+  smplxMale: {fileID: 2818962797845617887, guid: 004c044e807c546409b544ef2010a700, type: 3}
   walkPointObject: {fileID: 919132149155446097, guid: 75ca130032d13ca48a4789d64f9909af, type: 3}
   visualizespatialMeshPath: 1
   spatialMeshMat: {fileID: 2100000, guid: 5a74c8b3858e9eb4f988ad14073b2f9f, type: 2}

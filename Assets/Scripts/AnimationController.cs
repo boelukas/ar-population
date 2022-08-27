@@ -57,6 +57,7 @@ public class AnimationController : MonoBehaviour
     private bool spatialMeshVisWasActive;
     private bool loadedSavedAnimations = false;
     private PersistanceController persistanceController;
+    private bool useBetaShapes = true;
 
     // Path Setter
     private PathSetter pathSetter;
@@ -224,7 +225,10 @@ public class AnimationController : MonoBehaviour
             smplx.modelType = SMPLX.ModelType.Male;
         }
         smplx.SetHandPose(SMPLX.HandPose.Relaxed);
-        //SetBetas(gamma.motion[0].betas, smplx);
+        if (useBetaShapes)
+        {
+            SetBetas(gamma.motion[0].betas, smplx);
+        }
 
         InitAnimationCurves(human);
 
@@ -513,7 +517,13 @@ public class AnimationController : MonoBehaviour
             int id = humans.Count - 1;
             GameObject human = humans.Last();
             humans.Remove(human);
+            if (useBetaShapes)
+            {
+                Destroy(human.GetComponentInChildren<SkinnedMeshRenderer>().sharedMesh);
+            }
+
             Destroy(human);
+            
             if (visualizeGammaWalkingPath)
             {
                 GameObject p = gammaPaths.Last();
