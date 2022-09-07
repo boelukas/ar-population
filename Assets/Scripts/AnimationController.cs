@@ -16,8 +16,9 @@ using UnityEngine.AI;
 public class AnimationController : MonoBehaviour
 {
     // SMPLX objects
-    public GameObject smplxFemale;
-    public GameObject smplxMale;
+    public GameObject smplxMaleDefault;
+    public GameObject smplxFemaleDefault;
+
     public GameObject walkPointObject;
 
     // SpatialMesh path properties
@@ -51,20 +52,20 @@ public class AnimationController : MonoBehaviour
 
     private IMixedRealitySpatialAwarenessMeshObserver meshObserver;
     private List<GameObject> humans;
+    private List<float[]> betas;
     private List<GameObject> spatialMeshPaths;
     private List<GameObject> gammaPaths;
     private Vector3[] currentPath;
     private bool spatialMeshVisWasActive;
     private bool loadedSavedAnimations = false;
     private PersistanceController persistanceController;
-    private bool useBetaShapes = true;
 
     // Path Setter
     private PathSetter pathSetter;
 
     // Animation parameters
     private readonly int nFramesMp = 10;
-    private readonly float deltaT = 1/30f;
+    private readonly float deltaT = 1 / 30f;
 
     private readonly int nSmplxBodyJoints = 21;
     private readonly string[] bodyJointNames = new string[] { "pelvis", "left_hip", "right_hip", "spine1", "left_knee", "right_knee", "spine2", "left_ankle", "right_ankle", "spine3", "left_foot", "right_foot", "neck", "left_collar", "right_collar", "head", "left_shoulder", "right_shoulder", "left_elbow", "right_elbow", "left_wrist", "right_wrist", "jaw", "left_eye_smplhf", "right_eye_smplhf", "left_index1", "left_index2", "left_index3", "left_middle1", "left_middle2", "left_middle3", "left_pinky1", "left_pinky2", "left_pinky3", "left_ring1", "left_ring2", "left_ring3", "left_thumb1", "left_thumb2", "left_thumb3", "right_index1", "right_index2", "right_index3", "right_middle1", "right_middle2", "right_middle3", "right_pinky1", "right_pinky2", "right_pinky3", "right_ring1", "right_ring2", "right_ring3", "right_thumb1", "right_thumb2", "right_thumb3" };
@@ -81,8 +82,14 @@ public class AnimationController : MonoBehaviour
     private int nChildren;
 
     private float floorY = float.NaN;
-
-
+    private float[,] femaleBetas = new float[,] {
+        { -1.135557f, 0.4900467f, -1.571586f, 0.324353f, 0.6154498f, 1.360919f, -0.4199827f, 0.68612f, -0.5775192f, 0.09844136f},
+        {-3.77f, 0.07f, 1.188608f, 3.63f, -4.37f, 2.73f, -3.92f, -1.99f, 5f, 1.536026f},
+        { -0.05453706f, 5f, 0.3141453f, -1.396356f, -0.2505138f, 0.9503168f, 1.143413f, -1.807971f, -0.9851396f, -1.033214f}};
+    private float[,] maleBetas = new float[,] {
+        {-0.9842331f, -0.9684765f, -1.111603f, 1.859693f, -1.533256f, 0.8656253f, -0.542197f, -0.4216726f, 0.1279395f, 0.4362581f},
+        {-2.02f, 1.44f, 0.6797122f, -1.945877f, -0.4878228f, 1.552606f, -0.9787962f, 0.04247403f, 1.987148f, 0.4292719f},
+        { 1.652401f, 3.57f, 0.261369f, -1.349104f, 0.858787f, -1.169071f, 0.4518526f, -1.11841f, -0.1033189f, 1.916406f}};
 
 
     void Start()
@@ -92,6 +99,7 @@ public class AnimationController : MonoBehaviour
         requestFailureCallback = new System.Action(CleanUpAfterFailedRequest);
         destroyAllAnimationsDialogCallback = new System.Action<DialogResult>(DestroyAllAnimationsDialogCallback);
         humans = new List<GameObject>();
+        betas = new List<float[]>();
         spatialMeshPaths = new List<GameObject>();
         gammaPaths = new List<GameObject>();
         animations = new GameObject("animations");
@@ -146,15 +154,14 @@ public class AnimationController : MonoBehaviour
             return;
         }
         currentPath = pathSetter.GetWayPoints();
-        floorY = currentPath[0].y;
-        spatialMeshPaths.Add(pathSetter.path);
-
         if (currentPath.Length < 2)
         {
             Debug.Log("[Animation Controller] Current path not long enough. Path length: "+ currentPath.Length);
             dialogController.OpenDialog("Error", "Current path is not long enough. Add more way points.");
             return;
         }
+        floorY = currentPath[0].y;
+        spatialMeshPaths.Add(pathSetter.path);
         pathSetter.ResetPath(!visualizespatialMeshPath);
         
         string jsonPath = PathToJson(UnityPathToGamma(currentPath));
@@ -200,13 +207,43 @@ public class AnimationController : MonoBehaviour
         Debug.Log("[Animation Controller] Importing Animation.");
 
         GameObject human;
-        if (gamma.motion[0].gender == "female")
+        Animation anim;
+        SMPLX.ModelType gender;
+        if(gamma.motion[0].gender == "female")
         {
-            human = Instantiate(smplxFemale, animations.transform);
+            gender = SMPLX.ModelType.Female;
         }
         else
         {
-            human = Instantiate(smplxMale, animations.transform);
+            gender = SMPLX.ModelType.Male;
+        }
+        int betaIndex = FindBetaShapeIndex(gamma.motion[0].betas.data, gender);
+        if( betaIndex != -1)
+        {
+            Debug.Log("[Animation Controller] Importing pre-defined Body.");
+            human = Instantiate(humans[betaIndex], animations.transform);
+            anim = human.GetComponent<Animation>();
+            anim.RemoveClip("pathWalking");
+        }
+        else
+        {
+            if (gamma.motion[0].gender == "female")
+            {
+                Debug.Log("[Animation Controller] Importing new female Body.");
+                human = Instantiate(smplxFemaleDefault, animations.transform);
+            }
+            else
+            {
+                Debug.Log("[Animation Controller] Importing new male Body.");
+                human = Instantiate(smplxMaleDefault, animations.transform);
+            }
+            anim = human.AddComponent<Animation>();
+            anim.cullingType = AnimationCullingType.BasedOnRenderers;
+
+            SMPLX smplx = human.AddComponent<SMPLX>();
+            smplx.modelType = gender;
+            smplx.SetHandPose(SMPLX.HandPose.Relaxed);
+            SetBetas(gamma.motion[0].betas, smplx);
         }
         if (visualizeGammaWalkingPath)
         {
@@ -214,28 +251,14 @@ public class AnimationController : MonoBehaviour
             gammaPaths.Add(CreateWalkPoints(gamma.wpath, animations));
         }
         humans.Add(human);
+        betas.Add(gamma.motion[0].betas.data);
         human.name = "human_" + humans.Count;
-        SMPLX smplx = human.AddComponent<SMPLX>();
-        if(gamma.motion[0].gender == "female")
-        {
-            smplx.modelType = SMPLX.ModelType.Female;
-        }
-        else
-        {
-            smplx.modelType = SMPLX.ModelType.Male;
-        }
-        smplx.SetHandPose(SMPLX.HandPose.Relaxed);
-        if (useBetaShapes)
-        {
-            SetBetas(gamma.motion[0].betas, smplx);
-        }
+        
 
         InitAnimationCurves(human);
 
-        AnimationClip clip = CreateAnimationClip(gamma.motion, smplx, human);
+        AnimationClip clip = CreateAnimationClip(gamma.motion, human.GetComponent<SMPLX>(), human);
 
-        Animation anim = human.AddComponent<Animation>();
-        anim.cullingType = AnimationCullingType.BasedOnRenderers;
 
         anim.AddClip(clip, "pathWalking");
         anim.Play("pathWalking");
@@ -516,13 +539,18 @@ public class AnimationController : MonoBehaviour
         {
             int id = humans.Count - 1;
             GameObject human = humans.Last();
-            humans.Remove(human);
-            if (useBetaShapes)
+
+            float[] beta = betas.Last();
+            if(FindBetaShapeIndex(beta, human.GetComponent<SMPLX>().modelType) == betas.Count - 1 && !IsZero(beta))
             {
+                // Destroy cloned mesh if this is the last instance using it and if its not the default mesh from the prefab.
+                Debug.Log("[Animation Controller] Destroying cloned shared mesh.");
                 Destroy(human.GetComponentInChildren<SkinnedMeshRenderer>().sharedMesh);
             }
 
+            humans.Remove(human);
             Destroy(human);
+            betas.Remove(beta);
             
             if (visualizeGammaWalkingPath)
             {
@@ -710,5 +738,33 @@ public class AnimationController : MonoBehaviour
     {
         Debug.Log("Quitting App");
         Application.Quit();
+    }
+
+    private int FindBetaShapeIndex(float[] newBetas, SMPLX.ModelType gender)
+    {
+        for (int i = 0; i < betas.Count(); i++)
+        {
+            for(int j = 0; j < 10; j++)
+            {
+                if (newBetas[j] != betas.ElementAt(i)[j])
+                {
+                    break;
+                }
+                if (newBetas[j] == betas.ElementAt(i)[j] && j == 9 && humans.ElementAt(i).GetComponent<SMPLX>().modelType == gender)
+                {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+    private bool IsZero(float[] arr)
+    {
+        bool isZero = true;
+        for(int i = 0; i < arr.Length; i++)
+        {
+            isZero &= arr[i] == 0.0f;
+        }
+        return isZero;
     }
 }
