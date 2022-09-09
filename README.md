@@ -9,7 +9,9 @@ The latest build together with demo videos can be found here: https://polybox.et
 To install, copy the build to the hololens with a USB stick or over the device portal.
 On the holelens open the bundle with the App Installer.
 
-To run the app, the [GAMMA server](https://github.com/boelukas/GAMMA-server) has to be set up. Clone the repository and install the python requirements using e.g conda and env.yml. Follow the installation instructions in the repo. Then run gamma-server.py and set up the necessary port forwardings.
+To run the app, the [GAMMA server](https://github.com/boelukas/GAMMA-server) has to be set up: This can be done locally or in the cloud. For the google cloud this is described [here](serverSetup.md).
+
+
 
 ## Usage
 Start the app and open the hand menu by turning the palm of your hand upwards. Press on the server settings button to open the server menu. There the connection to the server can be setup and tested. To enter a different host address, point at the field and perform an air tap. If the test connection button is green, everything works. Alternatively one can edit the config.json file in the hololens device portal under LocalAppData/ar-population/LocalState/config.json
