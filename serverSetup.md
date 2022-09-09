@@ -12,7 +12,6 @@
         - Version: Ubuntu  22.04 LTS
         - Balanced persistent disk
         - Size 20 GB (At least 16 GB are needed)
-        - Deletion rule: Keep boot disk
     - Firewall: Allow HTTP and HTTPS traffic
     - Advanced options: Networking: Add a custom tag. e.g ar-population-instance
 - Go to Set up firewall rules: Create Firewall Rule
