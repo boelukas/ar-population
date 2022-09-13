@@ -57,5 +57,12 @@ If you have a e.g. desktop and use it as the server, you only need to do the fol
 - Unzip them such that results and extern are in the root directory of the repo (GAMMA-server/extern).
 - run ```python gamma_server.py```
 
+- Troubleshoot: If when executing the server an error with conversions occurs try changing the following lines to look like this in the file /home/--username--/miniconda3/envs/gamma/lib/python3.8/site-packages/torchgeometry/core/conversions.py:
+```
+mask_c0 = mask_d2 * mask_d0_d1
+mask_c1 = mask_d2 * ~(mask_d0_d1)
+mask_c2 = ~(mask_d2) * mask_d0_nd1
+mask_c3 = ~(mask_d2) * ~(mask_d0_nd1)
+```
 
 
