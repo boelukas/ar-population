@@ -42,3 +42,27 @@ mask_c2 = ~(mask_d2) * mask_d0_nd1
 mask_c3 = ~(mask_d2) * ~(mask_d0_nd1)
 ```
 - Troubleshoot: If there is no reaction from the server, the network settings of the VM might be the problem. Try in a new VM terminal to CURL the local ip address that is printed by the server. If the server reacts then, check the firewall settings of the VM.
+
+
+# GAMMA-server local setup
+If you have a e.g. desktop and use it as the server, you only need to do the following steps above:
+
+- Install miniconda:
+    - ```wget https://repo.anaconda.com/miniconda/Miniconda3-py38_4.12.0-Linux-x86_64.sh```
+    - ```bash Miniconda3-py38_4.12.0-Linux-x86_64.sh```
+- Clone the [Gamma-server repo](https://github.com/boelukas/GAMMA-server)
+- Create conda environment: ```cd GAMMA-server && conda env create -f env.yml```
+- ```conda activate gamma```
+- Copy the checkpoints and extern dependencies to the repo: ```wget https://polybox.ethz.ch/index.php/s/FtM3i343RqdDldv/download -O checkpoints.zip```
+- Unzip them such that results and extern are in the root directory of the repo (GAMMA-server/extern).
+- run ```python gamma_server.py```
+
+- Troubleshoot: If when executing the server an error with conversions occurs try changing the following lines to look like this in the file /home/--username--/miniconda3/envs/gamma/lib/python3.8/site-packages/torchgeometry/core/conversions.py:
+```
+mask_c0 = mask_d2 * mask_d0_d1
+mask_c1 = mask_d2 * ~(mask_d0_d1)
+mask_c2 = ~(mask_d2) * mask_d0_nd1
+mask_c3 = ~(mask_d2) * ~(mask_d0_nd1)
+```
+
+

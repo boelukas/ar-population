@@ -9,7 +9,7 @@ The latest build together with demo videos can be found here: https://polybox.et
 To install, copy the build to the hololens with a USB stick or over the device portal.
 On the holelens open the bundle with the App Installer.
 
-To run the app, the [GAMMA server](https://github.com/boelukas/GAMMA-server) has to be set up: This can be done locally or in the cloud. For the google cloud this is described [here](serverSetup.md).
+To run the app, the [GAMMA server](https://github.com/boelukas/GAMMA-server) has to be set up: This can be done locally or in the cloud. See [here](serverSetup.md) for setup instructions both on the google cloud and on a local server.
 
 
 
