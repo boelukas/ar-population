@@ -5,6 +5,20 @@ Visualization of [GAMMA: The Wanderings of Odysseus in 3D Scenes](https://yz-cns
 
 ![](https://github.com/boelukas/ar-population/blob/main/demo.gif)
 
+
+cite this work when using the content.
+```
+@inproceedings{zhang2022wanderings,
+  title={The Wanderings of Odysseus in 3D Scenes},
+  author={Zhang, Yan and Tang, Siyu},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  pages={20481--20491},
+  year={2022}
+}
+```
+
+
+
 ## Installation
 The latest build together with demo videos can be found here: https://polybox.ethz.ch/index.php/s/KU0BVeec2ToCxlq.
 
