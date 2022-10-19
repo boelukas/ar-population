@@ -5,26 +5,21 @@ Copyright (c) 2022 Lukas Bösiger and Yan Zhang
 
 Remarks of Use
 
-1. License of SMPL-X body, model, and any other related contents should be applied togehter with our license.
+1. This CC BY-NC-SA 4.0 license applies to all contents provided by us, including but not limiting to code, video, pictures, compiled binaries, and installation packages.
+
+2. License of SMPL-X body, model, and any other related contents should be applied together with our license.
 Check their websites for detailed information: https://smpl-x.is.tue.mpg.de/
 
-2. License of AMASS datasets should be applied together with our license.
+3. License of AMASS datasets should be applied together with our license.
 Check their websites for detailed information: https://amass.is.tue.mpg.de/
 
-3. The Data & Software may not be used for pornographic purposes or to generate pornographic material whether commercial or not. This license also prohibits the use of the Software to train methods/algorithms/neural networks/etc. for commercial, pornographic, military, surveillance, or defamatory use of any kind. By downloading the Data & Software, you agree not to reverse engineer it.
+4. The Data & Software may not be used for pornographic purposes or to generate pornographic material whether commercial or not. This license also prohibits the use of the Software to train methods/algorithms/neural networks/etc. for commercial, pornographic, military, surveillance, or defamatory use of any kind. By downloading the Data & Software, you agree not to reverse engineer it.
 
-4. The licensors are exempted from monitoring behavior of users. Take your own risk of misuse. 
+5. The licensors are exempted from monitoring behavior of users. Take your own risk of misuse. 
 
-5. Please cite the following work for your use.
-```
-@inproceedings{zhang2022wanderings,
-  title={The Wanderings of Odysseus in 3D Scenes},
-  author={Zhang, Yan and Tang, Siyu},
-  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
-  pages={20481--20491},
-  year={2022}
-}
-```
+
+
+
 
 =======================================================================
 
